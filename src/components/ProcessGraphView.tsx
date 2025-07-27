@@ -24,15 +24,16 @@ function ProcessGraphView() {
     if (!cyRef.current) return;
     const cy = cyRef.current;
 
-    cy.on('tap', 'node', (event) => {
+    cy.on('select', 'node', (event) => {
       const node = event.target;
       setSelectedPid(node.id());
-      // console.log('Node clicked:', node.id(), node.data());
-      // cy.nodes().unselect();
-      // node.select();
-      // cy.fit(node, 300);
-
     });
+
+    cy.on('unselect', 'node', (_evt) => {
+      setSelectedPid(undefined);
+    });
+
+
   }, [cyRef.current]);
 
   useEffect(() => {
@@ -101,7 +102,7 @@ function ProcessGraphView() {
         }
       });
 
-    const initialNodes: cytoscape.ElementDefinition[] = [...new Set(pidNodes), ...new Set(ppidNodes)]; //.sort((a, b) => Number(a.data.source) - Number(b.data.source));
+    const initialNodes: cytoscape.ElementDefinition[] = [...unique(pidNodes), ...unique(ppidNodes)]; //.sort((a, b) => Number(a.data.source) - Number(b.data.source));
 
     const pidEdges: cytoscape.ElementDefinition[] = processes
       .filter((process) => (process.parent !== null && process.parent !== undefined ))
@@ -117,7 +118,7 @@ function ProcessGraphView() {
         }
       }
     });
-    const initialEdges: cytoscape.ElementDefinition[] = [...new Set(pidEdges)]; //.sort((a, b) => Number(a.data.source) - Number(b.data.source));
+    const initialEdges: cytoscape.ElementDefinition[] = [...unique(pidEdges)]; //.sort((a, b) => Number(a.data.source) - Number(b.data.source));
     const nodes_and_edges = [...initialNodes, ...initialEdges];
 
     setElements(nodes_and_edges);
@@ -235,3 +236,8 @@ function get_info(process: ProcessInfo | undefined, socket: SockInfo | undefined
   return ret.join('\n')
 }
 
+function unique(arr: any[]) {
+  return Array.from(
+    new Set(arr.map(o => JSON.stringify(o)))
+  ).map(str => JSON.parse(str));
+}
