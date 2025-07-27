@@ -17,7 +17,23 @@ function ProcessGraphView() {
   const elements = useElementsStore((state) => state.elements);
   const setElements = useElementsStore((state) => state.setElements);
   const selectedPid = useSelectedPidStore((state) => state.selectedPid);
+  const setSelectedPid = useSelectedPidStore((state) => state.setSelectedPid);
   const cyRef = useRef<cytoscape.Core | null>(null);
+
+  useEffect(() => {
+    if (!cyRef.current) return;
+    const cy = cyRef.current;
+
+    cy.on('tap', 'node', (event) => {
+      const node = event.target;
+      setSelectedPid(node.id());
+      // console.log('Node clicked:', node.id(), node.data());
+      // cy.nodes().unselect();
+      // node.select();
+      // cy.fit(node, 300);
+
+    });
+  }, [cyRef.current]);
 
   useEffect(() => {
     if (!cyRef.current) return;
