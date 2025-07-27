@@ -1,3 +1,4 @@
+@import url('resizer.css');
 html, body, #root, .container {
   padding: 0;
   margin: 0;
@@ -25,3 +26,52 @@ html, body, #root, .container {
 .container {
 }
 
+.main-pane {
+  width: 100%;
+  height: 100%;
+}
+
+.Pane1 {
+  flex: 1;
+}
+.Pane2 {
+  flex: 1;
+}
+
+.graph-pane {
+  width: 100%;
+  height: 100vh;
+}
+
+.graph-pane>div {
+  width: 100%;
+}
+
+.table-pane {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+
+}
+
+.table-pane .search {
+
+}
+
+.table-pane .header {
+
+}
+
+.table-pane .table {
+  flex: 1;
+}
+
+.table-pane .table .row {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: flex;
+}
+
+.table-pane .table .row .col {
+
+}

@@ -1,4 +1,4 @@
-use netstat::{get_sockets_info, AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo, SocketInfo, TcpState};
+use netstat2::{get_sockets_info, AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo, SocketInfo, TcpState};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none};
 use specta::Type;
@@ -39,23 +39,25 @@ pub enum SockState {
     LastAck,
     TimeWait,
     DeleteTcb,
+    Unknown
 }
 
 impl From<&TcpState> for SockState {
     fn from(state: &TcpState) -> Self {
         match state {
-            TcpState::Closed => Self::Closed,
-            TcpState::Listen => Self::Listen,
-            TcpState::SynSent => Self::SynSent,
-            TcpState::SynReceived => Self::SynReceived,
-            TcpState::Established => Self::Established,
-            TcpState::FinWait1 => Self::FinWait1,
-            TcpState::FinWait2 => Self::FinWait2,
-            TcpState::CloseWait => Self::CloseWait,
-            TcpState::Closing => Self::Closing,
-            TcpState::LastAck => Self::LastAck,
-            TcpState::TimeWait => Self::TimeWait,
-            TcpState::DeleteTcb => Self::DeleteTcb,
+            TcpState::Closed => {Self::Closed}
+            TcpState::Listen => {Self::Listen}
+            TcpState::SynSent => {Self::SynSent}
+            TcpState::SynReceived => {Self::SynReceived}
+            TcpState::Established => {Self::Established}
+            TcpState::FinWait1 => {Self::FinWait1}
+            TcpState::FinWait2 => {Self::FinWait2}
+            TcpState::CloseWait => {Self::CloseWait}
+            TcpState::Closing => {Self::Closing}
+            TcpState::LastAck => {Self::LastAck}
+            TcpState::TimeWait => {Self::TimeWait}
+            TcpState::DeleteTcb => {Self::DeleteTcb}
+            TcpState::Unknown => {Self::Unknown}
         }
     }
 }

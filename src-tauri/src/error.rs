@@ -41,8 +41,8 @@ impl From<std::io::Error> for ApiError {
     }
 }
 
-impl From<netstat::Error> for ApiError {
-    fn from(e: netstat::Error) -> Self {
+impl From<netstat2::error::Error> for ApiError {
+    fn from(e: netstat2::error::Error) -> Self {
         ApiError::NetstatError(e.to_string())
     }
 }

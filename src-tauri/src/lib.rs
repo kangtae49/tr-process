@@ -42,8 +42,8 @@ fn get_processes() -> Result<Vec<sys::ProcessInfo>> {
 async fn run_http_server(state: State<'_, Arc<RwLock<AppState>>>, serv_info: ServInfo) -> Result<ServInfo> {
     let app_state = state.inner().clone();
     if app_state.read().await.serv_info.clone().is_some() {
-        println!("err: running server ...");
-        return Err(ApiError::Error("err: running server ...".to_string()))
+        println!("The server is already running.");
+        return Err(ApiError::Error("The server is already running.".to_string()))
     };
 
     let app_state = state.inner().clone();

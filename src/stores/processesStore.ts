@@ -2,11 +2,11 @@ import { create } from "zustand"
 import { ProcessInfo } from "@/bindings.ts";
 
 export interface ProcessesStore {
-  processes: ProcessInfo[],
+  processes: ProcessInfo[] | undefined,
   setProcesses: (processes: ProcessInfo[]) => void
 }
 
 export const useProcessesStore = create<ProcessesStore>((set) => ({
-  processes: [],
+  processes: undefined,
   setProcesses: (processes: ProcessInfo[]) => set(() => ({ processes }))
 }))

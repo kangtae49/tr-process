@@ -49,8 +49,12 @@ function App() {
       port: 0,
       path: resourcePath
     }).then(
-      (res) => console.log(res),
-      (err) => console.log(err)
+      (res) => {
+        if (res.status == 'error') {
+          console.log('The server is already running.')
+        }
+      },
+      (_err) => console.log('The server is already running.')
     )
   }, [resourcePath]);
 

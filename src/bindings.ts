@@ -55,7 +55,7 @@ export type ProcessInfo = { pid: number; name: string; exe?: string | null; cpu_
 export type ServInfo = { name: string; ip: string; port: number; path: string }
 export type SockInfo = { local_addr: string; local_port: number; protocol: SockProtocol; pids: number[]; remote_addr?: string | null; remote_port?: number | null; state?: SockState | null }
 export type SockProtocol = "Tcp" | "Udp"
-export type SockState = "Closed" | "Listen" | "SynSent" | "SynReceived" | "Established" | "FinWait1" | "FinWait2" | "CloseWait" | "Closing" | "LastAck" | "TimeWait" | "DeleteTcb"
+export type SockState = "Closed" | "Listen" | "SynSent" | "SynReceived" | "Established" | "FinWait1" | "FinWait2" | "CloseWait" | "Closing" | "LastAck" | "TimeWait" | "DeleteTcb" | "Unknown"
 
 /** tauri-specta globals **/
 
