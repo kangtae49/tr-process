@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useRef} from 'react';
 import {commands, ProcessInfo, SockInfo} from "@/bindings.ts";
 import {useSocketsStore} from "@/stores/socketsStore.ts";
 import {useProcessesStore} from "@/stores/processesStore.ts";
@@ -7,6 +7,7 @@ import CytoscapeComponent from 'react-cytoscapejs';
 import {useElementsStore} from "@/stores/elementsStore.ts";
 import {get_mem} from "@/components/utils.ts";
 import AutoSizer from 'react-virtualized-auto-sizer'
+import {useSelectedPidStore} from "@/stores/selectedPidStore.ts";
 
 function ProcessGraphView() {
   const sockets = useSocketsStore((state) => state.sockets);
@@ -15,20 +16,20 @@ function ProcessGraphView() {
   const setProcesses = useProcessesStore((state) => state.setProcesses);
   const elements = useElementsStore((state) => state.elements);
   const setElements = useElementsStore((state) => state.setElements);
-  // const cyRef = useRef<cytoscape.Core | null>(null);
-  // const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+  const selectedPid = useSelectedPidStore((state) => state.selectedPid);
+  const cyRef = useRef<cytoscape.Core | null>(null);
 
-  // useEffect(() => {
-  //   const handleResize = () => {
-  //     setSize({ width: window.innerWidth, height: window.innerHeight });
-  //     if (cyRef.current) {
-  //       cyRef.current.resize();
-  //       cyRef.current.fit();
-  //     }
-  //   };
-  //   window.addEventListener('resize', handleResize);
-  //   return () => window.removeEventListener('resize', handleResize);
-  // }, []);
+  useEffect(() => {
+    if (!cyRef.current) return;
+    if (!selectedPid) return;
+    const cy = cyRef.current;
+    const target = cy.$(`#${selectedPid}`);
+    if (target.length) {
+      cy.nodes().unselect();
+      target.select();
+      cy.fit(target, 300);
+    }
+  }, [selectedPid, cyRef.current]);
 
   useEffect(() => {
     commands.getProcesses().then((res) => {
@@ -148,6 +149,22 @@ function ProcessGraphView() {
       }
     },
     {
+      selector: 'node:selected',
+      style: {
+        label: 'data(info)',
+        'text-valign': 'center',
+        'text-halign': 'center',
+        'background-color': '#a63131',
+        'border-color': '#af0707',
+        'border-width': 10,
+        color: '#000',
+        width: 150,
+        height: 150,
+        'text-wrap': 'wrap',
+        'font-size': 20,
+      }
+    },
+    {
       selector: 'edge',
       style: {
         width: 6,
@@ -164,9 +181,11 @@ function ProcessGraphView() {
     return <div>Loading...</div>;
   }
 
+
   return (
     <AutoSizer>
       {({ height, width }) => (
+        // @ts-ignore
       <CytoscapeComponent
         className="graph-pane"
         layout={layout}
@@ -177,7 +196,7 @@ function ProcessGraphView() {
           height
         }}
         stylesheet={stylesheet}
-        // cy={(cy) => { cyRef.current = cy; }}
+        cy={(cy) => { cyRef.current = cy; }}
       />
       )}
     </AutoSizer>
