@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef} from 'react';
+import React, {useEffect, useState} from 'react';
 import {commands, HttpNotify, ProcessInfo, SockInfo} from "@/bindings.ts";
 import {useSocketsStore} from "@/stores/socketsStore.ts";
 import {useProcessesStore} from "@/stores/processesStore.ts";
@@ -14,6 +14,7 @@ import {
   faArrowRotateRight
 } from '@fortawesome/free-solid-svg-icons'
 import { emit } from '@tauri-apps/api/event';
+import { revealItemInDir } from '@tauri-apps/plugin-opener';
 
 export type Item = {
   id: string
@@ -35,10 +36,12 @@ function ProcessGraphView() {
   const setElements = useElementsStore((state) => state.setElements);
   const selectedItem = useSelectedItemStore((state) => state.selectedItem);
   const setSelectedItem = useSelectedItemStore((state) => state.setSelectedItem);
-  const cyRef = useRef<cytoscape.Core | null>(null);
-  const setCyRef = useCallback((cy: cytoscape.Core) => {
-    cyRef.current = cy;
-  }, []);
+  const [cyInstance, setCyInstance] = useState<cytoscape.Core | null>(null);
+
+  const shellShowItemInFolder = async (path: string | undefined | null) => {
+    if (!path) return
+    return await revealItemInDir(path)
+  }
 
   const clickRefresh = () => {
     const httpNotify: HttpNotify = {
@@ -47,12 +50,12 @@ function ProcessGraphView() {
     emit('http', httpNotify).then();
   }
   useEffect(() => {
-    if (!cyRef.current) return;
-    const cy = cyRef.current;
+    if (!cyInstance) return;
+    const cy = cyInstance;
 
     cy.on('select', 'node', (event) => {
       const node = event.target;
-
+      console.log('select node', node);
       setSelectedItem(node.data());
     });
 
@@ -61,12 +64,12 @@ function ProcessGraphView() {
     });
 
 
-  }, [cyRef.current]);
+  }, [cyInstance]);
 
   useEffect(() => {
-    if (!cyRef.current) return;
+    if (!cyInstance) return;
     if (!selectedItem) return;
-    const cy = cyRef.current;
+    const cy = cyInstance;
     const target = cy.$(`#${selectedItem.id}`);
     if (target.length) {
       cy.nodes().unselect();
@@ -84,7 +87,7 @@ function ProcessGraphView() {
       // cy.center(cy.nodes());
       // cy.fit(target, 300);
     }
-  }, [selectedItem, cyRef.current]);
+  }, [selectedItem]);
 
   useEffect(() => {
     commands.getProcesses().then((res) => {
@@ -99,6 +102,7 @@ function ProcessGraphView() {
     commands.getSockets().then((res) => {
       if (res.status == 'ok') {
         const sockets = res.data;
+        console.log('sockets', sockets);
         setSockets(sockets);
       }
     });
@@ -107,7 +111,7 @@ function ProcessGraphView() {
   useEffect(() => {
     if (processes === undefined || sockets === undefined) return;
     const pidNodes: cytoscape.ElementDefinition[] = processes.map((process) => {
-      let find_socket = sockets.find((sock) => sock.pids.includes(process.pid));
+      const find_socket = sockets.find((sock) => sock.pids.includes(process.pid));
       const color = find_socket ? '#f4a261' : '#1f77b4';
       return {
         data: {
@@ -244,7 +248,7 @@ function ProcessGraphView() {
         </div>
           {selectedItem && selectedItem.process?.exe && (
             <>
-              <div className="folder"><Icon icon={faFolder} /></div>
+              <div className="folder" onClick={() => shellShowItemInFolder(selectedItem.process?.exe)}><Icon icon={faFolder} /></div>
               <div className="label">{selectedItem.process.exe}</div>
             </>
           )}
@@ -262,7 +266,7 @@ function ProcessGraphView() {
             height
           }}
           stylesheet={stylesheet}
-          cy={setCyRef}
+          cy={setCyInstance}
         />
         )}
       </AutoSizer>

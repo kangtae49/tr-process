@@ -50,7 +50,9 @@ function App() {
       path: resourcePath
     }).then(
       (res) => {
-        if (res.status == 'error') {
+        if (res.status == 'ok') {
+          console.log('The server is running', res.data);
+        } else if (res.status == 'error') {
           console.log('The server is already running.')
         }
       },

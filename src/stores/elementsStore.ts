@@ -3,10 +3,10 @@ import cytoscape from "cytoscape";
 
 export interface ElementsStore {
   elements: cytoscape.ElementDefinition[] | undefined,
-  setElements: (elements: cytoscape.ElementDefinition[]) => void
+  setElements: (elements?: cytoscape.ElementDefinition[]) => void
 }
 
 export const useElementsStore = create<ElementsStore>((set) => ({
   elements: undefined,
-  setElements: (elements: cytoscape.ElementDefinition[]) => set(() => ({ elements }))
+  setElements: (elements?: cytoscape.ElementDefinition[]) => set(() => ({ elements }))
 }))
