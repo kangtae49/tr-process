@@ -11,7 +11,9 @@ import {useSelectedItemStore} from "@/stores/selectedItemStore.ts";
 import { FontAwesomeIcon as Icon } from '@fortawesome/react-fontawesome'
 import {
   faFolder,
-  faArrowRotateRight
+  faArrowRotateRight,
+  faMagnifyingGlassPlus,
+  faMagnifyingGlassMinus,
 } from '@fortawesome/free-solid-svg-icons'
 import { emit } from '@tauri-apps/api/event';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
@@ -49,6 +51,37 @@ function ProcessGraphView() {
     }
     emit('http', httpNotify).then();
   }
+
+  const clickZoomIn = () => {
+    const cy = cyInstance;
+    if (!cy) return;
+
+    const selectedNode = cy.$(':selected');
+    cy.animate({
+      fit: {
+        eles: selectedNode,
+        padding: 230,
+      },
+      duration: 300,
+      easing: 'ease-in-out',
+    });
+
+  }
+
+  const clickZoomOut = () => {
+    const cy = cyInstance;
+    if (!cy) return;
+
+    cy.animate({
+      fit: {
+        eles: cy.elements(),
+        padding: 50
+      },
+      duration: 500,
+      easing: 'ease-in-out'
+    });
+  }
+
   useEffect(() => {
     if (!cyInstance) return;
     const cy = cyInstance;
@@ -82,7 +115,12 @@ function ProcessGraphView() {
           x: cy.width() / 2 - pos.x * cy.zoom(),
           y: cy.height() / 2 - pos.y * cy.zoom(),
         };
-        cy.pan(pan);
+        cy.animate({
+          pan: pan,
+          duration: 500, // ms 단위
+          easing: 'ease-in-out' // 'linear', 'ease-in', 'ease-out', 등
+        });
+        // cy.pan(pan);
       }
       // cy.center(cy.nodes());
       // cy.fit(target, 300);
@@ -246,12 +284,21 @@ function ProcessGraphView() {
         <div className="refresh">
           <Icon icon={faArrowRotateRight} onClick={() => clickRefresh()} />
         </div>
-          {selectedItem && selectedItem.process?.exe && (
-            <>
-              <div className="folder" onClick={() => shellShowItemInFolder(selectedItem.process?.exe)}><Icon icon={faFolder} /></div>
-              <div className="label">{selectedItem.process.exe}</div>
-            </>
-          )}
+        <div className="zoom-out">
+          <Icon icon={faMagnifyingGlassMinus} onClick={() => clickZoomOut()} />
+        </div>
+        {selectedItem && (
+          <div className="zoom-in">
+            <Icon icon={faMagnifyingGlassPlus} onClick={() => clickZoomIn()} />
+          </div>
+        )}
+        {selectedItem && selectedItem.process?.exe && (
+          <div className="folder" onClick={() => shellShowItemInFolder(selectedItem.process?.exe)}><Icon icon={faFolder} /></div>
+        )}
+        {selectedItem && (
+          <div className="label">[{selectedItem.id}] {selectedItem.process?.exe || selectedItem.process?.name || ''}</div>
+        )}
+
       </div>
       <AutoSizer>
         {({ height, width }) => (

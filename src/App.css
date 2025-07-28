@@ -135,3 +135,10 @@ html, body, #root, .container {
 .fa-folder:hover {transform: var(--scale); color: var(--hover-color);}
 .fa-arrow-rotate-right {color: var(--selected-color); margin-right: 5px; cursor: pointer;}
 .fa-arrow-rotate-right:hover {transform: var(--scale); color: var(--hover-color);}
+
+.fa-magnifying-glass-plus {color: var(--selected-color); margin-right: 5px; cursor: pointer;}
+.fa-magnifying-glass-plus:hover {transform: var(--scale); color: var(--hover-color);}
+.fa-magnifying-glass-minus {color: var(--selected-color); margin-right: 5px; cursor: pointer;}
+.fa-magnifying-glass-minus:hover {transform: var(--scale); color: var(--hover-color);}
+
+

@@ -3,8 +3,6 @@ import AutoSizer from "react-virtualized-auto-sizer";
 import { useTableStore } from '@/stores/tableStore';
 import {get_mem} from "@/components/utils.ts";
 import {useEffect, useRef} from "react";
-import {useSelectedPidStore} from "@/stores/selectedPidStore.ts";
-import {ElementDefinition} from "cytoscape";
 import {useSelectedItemStore} from "@/stores/selectedItemStore.ts";
 import {Item} from "@/components/ProcessGraphView.tsx";
 
@@ -12,18 +10,10 @@ import {Item} from "@/components/ProcessGraphView.tsx";
 const ITEM_SIZE = 18;
 function ProcessTableListView() {
   const table = useTableStore((state) => state.table);
-  // const selectedPid = useSelectedPidStore((state) => state.selectedPid);
-  // const setSelectedPid = useSelectedPidStore((state) => state.setSelectedPid);
   const selectedItem = useSelectedItemStore((state) => state.selectedItem);
   const setSelectedItem = useSelectedItemStore((state) => state.setSelectedItem);
   const listRef = useRef<List>(null);
 
-  // const clickPid = (pid: string | undefined) => {
-  //   console.log(pid);
-  //   if (pid) {
-  //     setSelectedPid(pid);
-  //   }
-  // }
   const clickItem = (item: Item) => {
     console.log(item);
     if (item) {
