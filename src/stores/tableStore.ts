@@ -1,12 +1,12 @@
 import { create } from "zustand"
-import cytoscape from "cytoscape";
+import {Item} from "@/components/ProcessGraphView.tsx";
 
 export interface TableStore {
-  table: cytoscape.ElementDefinition[] | undefined,
-  setTable: (table: cytoscape.ElementDefinition[]) => void
+  table: Item[] | undefined,
+  setTable: (table: Item[]) => void
 }
 
 export const useTableStore = create<TableStore>((set) => ({
   table: undefined,
-  setTable: (table: cytoscape.ElementDefinition[]) => set(() => ({ table }))
+  setTable: (table: Item[]) => set(() => ({ table }))
 }))

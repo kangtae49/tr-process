@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useRef} from 'react';
-import {commands, ProcessInfo, SockInfo} from "@/bindings.ts";
+import {commands, HttpNotify, ProcessInfo, SockInfo} from "@/bindings.ts";
 import {useSocketsStore} from "@/stores/socketsStore.ts";
 import {useProcessesStore} from "@/stores/processesStore.ts";
 import cytoscape from 'cytoscape';
@@ -7,7 +7,24 @@ import CytoscapeComponent from 'react-cytoscapejs';
 import {useElementsStore} from "@/stores/elementsStore.ts";
 import {get_mem} from "@/components/utils.ts";
 import AutoSizer from 'react-virtualized-auto-sizer'
-import {useSelectedPidStore} from "@/stores/selectedPidStore.ts";
+import {useSelectedItemStore} from "@/stores/selectedItemStore.ts";
+import { FontAwesomeIcon as Icon } from '@fortawesome/react-fontawesome'
+import {
+  faFolder,
+  faArrowRotateRight
+} from '@fortawesome/free-solid-svg-icons'
+import { emit } from '@tauri-apps/api/event';
+
+export type Item = {
+  id: string
+  type: string
+  label: string
+  color: string
+  process?: ProcessInfo
+  socket?: SockInfo
+  info: string
+}
+
 
 function ProcessGraphView() {
   const sockets = useSocketsStore((state) => state.sockets);
@@ -16,24 +33,31 @@ function ProcessGraphView() {
   const setProcesses = useProcessesStore((state) => state.setProcesses);
   const elements = useElementsStore((state) => state.elements);
   const setElements = useElementsStore((state) => state.setElements);
-  const selectedPid = useSelectedPidStore((state) => state.selectedPid);
-  const setSelectedPid = useSelectedPidStore((state) => state.setSelectedPid);
+  const selectedItem = useSelectedItemStore((state) => state.selectedItem);
+  const setSelectedItem = useSelectedItemStore((state) => state.setSelectedItem);
   const cyRef = useRef<cytoscape.Core | null>(null);
   const setCyRef = useCallback((cy: cytoscape.Core) => {
     cyRef.current = cy;
   }, []);
 
+  const clickRefresh = () => {
+    const httpNotify: HttpNotify = {
+      cmd: 'Refresh'
+    }
+    emit('http', httpNotify).then();
+  }
   useEffect(() => {
     if (!cyRef.current) return;
     const cy = cyRef.current;
 
     cy.on('select', 'node', (event) => {
       const node = event.target;
-      setSelectedPid(node.id());
+
+      setSelectedItem(node.data());
     });
 
     cy.on('unselect', 'node', (_evt) => {
-      setSelectedPid(undefined);
+      setSelectedItem(undefined);
     });
 
 
@@ -41,9 +65,9 @@ function ProcessGraphView() {
 
   useEffect(() => {
     if (!cyRef.current) return;
-    if (!selectedPid) return;
+    if (!selectedItem) return;
     const cy = cyRef.current;
-    const target = cy.$(`#${selectedPid}`);
+    const target = cy.$(`#${selectedItem.id}`);
     if (target.length) {
       cy.nodes().unselect();
       target.select();
@@ -60,7 +84,7 @@ function ProcessGraphView() {
       // cy.center(cy.nodes());
       // cy.fit(target, 300);
     }
-  }, [selectedPid, cyRef.current]);
+  }, [selectedItem, cyRef.current]);
 
   useEffect(() => {
     commands.getProcesses().then((res) => {
@@ -212,26 +236,37 @@ function ProcessGraphView() {
     return <div>Loading...</div>;
   }
 
-
-
   return (
-    <AutoSizer>
-      {({ height, width }) => (
-        // @ts-ignore
-      <CytoscapeComponent
-        className="graph-pane"
-        layout={layout}
-        elements={elements}
-        style={{
-          ...style,
-          width,
-          height
-        }}
-        stylesheet={stylesheet}
-        cy={setCyRef}
-      />
-      )}
-    </AutoSizer>
+    <div className="graph-pane">
+      <div className="header">
+        <div className="refresh">
+          <Icon icon={faArrowRotateRight} onClick={() => clickRefresh()} />
+        </div>
+          {selectedItem && selectedItem.process?.exe && (
+            <>
+              <div className="folder"><Icon icon={faFolder} /></div>
+              <div className="label">{selectedItem.process.exe}</div>
+            </>
+          )}
+      </div>
+      <AutoSizer>
+        {({ height, width }) => (
+          // @ts-ignore
+        <CytoscapeComponent
+          className="graph"
+          layout={layout}
+          elements={elements}
+          style={{
+            ...style,
+            width,
+            height
+          }}
+          stylesheet={stylesheet}
+          cy={setCyRef}
+        />
+        )}
+      </AutoSizer>
+    </div>
   )
 }
 

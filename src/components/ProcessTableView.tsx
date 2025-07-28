@@ -1,5 +1,4 @@
 import {useEffect} from "react";
-import cytoscape from 'cytoscape';
 import {useElementsStore} from "@/stores/elementsStore.ts";
 import { FontAwesomeIcon as Icon } from '@fortawesome/react-fontawesome'
 import {
@@ -11,6 +10,8 @@ import { useTableOrderStore } from '@/stores/tableOrderStore';
 import {OrdAsc, OrdBy, OrdItm, sort_items} from "@/components/ordering.ts";
 import ProcessTableListView from "@/components/ProcessTableListView.tsx";
 import {useTableStore} from "@/stores/tableStore.ts";
+import {useSelectedItemStore} from "@/stores/selectedItemStore.ts";
+import {Item} from "@/components/ProcessGraphView.tsx";
 
 function ProcessTableView() {
   const elements = useElementsStore((state) => state.elements);
@@ -32,7 +33,10 @@ function ProcessTableView() {
 
   useEffect(() => {
     if (elements) {
-      const elems: cytoscape.ElementDefinition[] = elements.filter((elem) => elem.data.type === 'node');
+      const elems: Item[] = elements
+        .filter((elem) => elem.data.type === 'node')
+        .map((elem) => elem.data as Item)
+      ;
       setTable(elems);
       if (tableOrder) {
         setTableOrder({
@@ -63,7 +67,9 @@ function ProcessTableView() {
     }
     const sorted_items = sort_items(table, ordering);
     setTable([...sorted_items]);
-  }, [tableOrder])
+  }, [tableOrder]);
+
+
 
   let iconPid = faCircleMinus
   let iconPpid = faCircleMinus

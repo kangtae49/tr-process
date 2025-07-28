@@ -1,7 +1,7 @@
+import {useState} from "react";
 import { SplitPane } from '@rexxars/react-split-pane'
 import ProcessTableView from "@/components/ProcessTableView.tsx";
 import ProcessGraphView from "@/components/ProcessGraphView.tsx";
-import {useState} from "react";
 
 function ProcessView() {
   const [isResizing, setIsResizing] = useState(false)

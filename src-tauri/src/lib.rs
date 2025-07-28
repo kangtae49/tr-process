@@ -1,11 +1,10 @@
-use std::io::Write;
 use std::sync::Arc;
 use tauri::{Manager, State, Window};
 use tauri_specta::{collect_commands, Builder};
 use tokio::sync::{oneshot, Mutex, RwLock};
 
 use crate::error::{ApiError, Result};
-use crate::http_server::{HttpNotify, ServInfo};
+use crate::http_server::{ServInfo};
 
 mod sys;
 mod error;
@@ -72,11 +71,15 @@ pub async fn run() {
 
     #[cfg(debug_assertions)]
     {
+        use std::path::Path;
+        use std::fs::OpenOptions;
+        use std::io::Write;
+
         use specta_typescript::BigIntExportBehavior;
         use specta_typescript::Typescript;
         use specta::TypeCollection;
-        use std::path::Path;
-        use std::fs::OpenOptions;
+
+        use crate::http_server::{HttpNotify};
 
         let bindings_path = Path::new("../src/bindings.ts");
         let ts = Typescript::default().bigint(BigIntExportBehavior::Number);
