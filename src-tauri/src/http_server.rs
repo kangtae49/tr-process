@@ -2,15 +2,20 @@ use std::path::absolute;
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex, RwLock};
 use axum::{Router};
-
-use axum::{Json, response::{IntoResponse}};
-use axum::routing::{get};
+use axum::{Json, body::Bytes, response::{IntoResponse}};
+use axum::body::Body;
+use axum::response::Response;
+use axum::routing::{get, post};
+use http::{header, HeaderValue, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use serde_with::{serde_as, skip_serializing_none};
 use tower_http::services::ServeDir;
 use tower_http::cors::{CorsLayer, Any};
 use specta::Type;
+
+use tauri::Emitter;
+
 use crate::AppState;
 use crate::error::Result;
 use crate::utils::get_resource_path;
@@ -30,6 +35,23 @@ pub struct ServInfo {
     pub ip: String,
     pub port: u16,
     pub path: String,
+}
+
+
+#[allow(dead_code)]
+#[serde_as]
+#[derive(Type, Serialize, Deserialize, Clone, Debug)]
+pub enum HttpCmd {
+    Refresh,
+}
+
+#[allow(dead_code)]
+#[skip_serializing_none]
+#[serde_as]
+#[derive(Type, Serialize, Deserialize, Clone, Debug)]
+pub struct HttpNotify {
+    pub cmd: HttpCmd,
+    pub param: Option<String>,
 }
 
 pub async fn run(app_state: Arc<RwLock<AppState>>, serv_info: ServInfo) -> Result<HttpServerHandle> {
@@ -61,7 +83,8 @@ pub async fn run(app_state: Arc<RwLock<AppState>>, serv_info: ServInfo) -> Resul
         let serv_dir = ServeDir::new(resource);
         let app = Router::new()
             .route("/serv_info", get(get_serv_info)).with_state(app_state.clone())
-            // .route("/serv_info", post(set_serv_info))
+            .route("/emit_jstr", post(post_emit_jstr)).with_state(app_state.clone())
+            .route("/emit", post(post_emit)).with_state(app_state.clone())
             // .route("/", get(move || async move {
             //     axum::response::Html(html)
             // }))
@@ -109,4 +132,45 @@ async fn get_serv_info(
             error_json.to_string().into_response()
         }
     }
+}
+
+async fn post_emit_jstr(axum::extract::State(app_state): axum::extract::State<Arc<RwLock<AppState>>>, body: Bytes) -> impl IntoResponse {
+    let state = app_state.read().await;
+    let body = match String::from_utf8(body.to_vec()) {
+        Ok(s) => s,
+        Err(_) => return Json(json!({ "error": "Invalid UTF-8" })).into_response(),
+    };
+    println!("notify: {}", body);
+    let window = match state.window.clone() {
+        Some(w) => w,
+        None => {
+            return Json(json!({
+                "error": "No window"
+            })).into_response()
+        }
+    };
+    if let Err(e) = window.emit("http", body.clone()) {
+        eprintln!("emit error: {}", e);
+    }
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, HeaderValue::from_static("application/json"))
+        .body(Body::from(body))
+        .unwrap()
+}
+
+async fn post_emit(axum::extract::State(app_state): axum::extract::State<Arc<RwLock<AppState>>>, Json(payload): Json<HttpNotify>) -> impl IntoResponse {
+    let state = app_state.read().await;
+    let window = match state.window.clone() {
+        Some(w) => w,
+        None => {
+            return Json(json!({
+                "error": "No window"
+            })).into_response()
+        }
+    };
+    if let Err(e) = window.emit("http", payload.clone()) {
+        eprintln!("emit error: {}", e);
+    }
+    Json(payload).into_response()
 }

@@ -1,10 +1,11 @@
+use std::io::Write;
 use std::sync::Arc;
-use tauri::{Manager, State};
+use tauri::{Manager, State, Window};
 use tauri_specta::{collect_commands, Builder};
 use tokio::sync::{oneshot, Mutex, RwLock};
 
 use crate::error::{ApiError, Result};
-use crate::http_server::ServInfo;
+use crate::http_server::{HttpNotify, ServInfo};
 
 mod sys;
 mod error;
@@ -13,6 +14,7 @@ mod utils;
 
 #[derive(Clone)]
 struct AppState {
+    pub window: Option<Window>,
     pub serv_info: Option<ServInfo>,
     pub shutdown_tx: Arc<Mutex<Option<oneshot::Sender<ServInfo>>>>,
 }
@@ -72,22 +74,47 @@ pub async fn run() {
     {
         use specta_typescript::BigIntExportBehavior;
         use specta_typescript::Typescript;
+        use specta::TypeCollection;
         use std::path::Path;
+        use std::fs::OpenOptions;
 
         let bindings_path = Path::new("../src/bindings.ts");
         let ts = Typescript::default().bigint(BigIntExportBehavior::Number);
         builder
             .export(ts.clone(), bindings_path)
             .expect("Failed to export typescript bindings");
+
+        let mut types = TypeCollection::default();
+        types.register::<HttpNotify>();
+        let http_notify_str = ts.clone().export(&types).unwrap();
+        let mut file = OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open(bindings_path)
+            .unwrap();
+        file.write_all(http_notify_str.as_bytes()).unwrap();
+
     }
 
     tauri::Builder::default()
         .manage(Arc::new(RwLock::new(AppState {
+            window: None,
             serv_info: None,
             shutdown_tx: Arc::new(Mutex::new(None)),
         })))
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(builder.invoke_handler())
+        .setup(move |app| {
+            let window = app.get_window("main").unwrap();
+            if let Some(state) = window.app_handle().try_state::<Arc<RwLock<AppState>>>() {
+                let state = Arc::clone(&state);
+                tauri::async_runtime::spawn(async move {
+                    let mut app_state = state.write().await;
+                    app_state.window = Some(window.clone());
+                });
+            }
+            Ok(())
+        })
         // .invoke_handler(tauri::generate_handler![greet])
         .on_window_event( |window, event| match event {
             tauri::WindowEvent::CloseRequested{ .. } => {

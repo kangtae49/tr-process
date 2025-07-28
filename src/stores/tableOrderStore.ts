@@ -8,7 +8,7 @@ export interface TableOrderStore {
 
 export const useTableOrderStore = create<TableOrderStore>((set) => ({
   tableOrder: { nm: 'Name', asc: 'Asc' },
-  setTableOrder: (tableOrder: OrdItm): void =>
+  setTableOrder: (tableOrder: OrdItm) =>
     set(() => ({
       tableOrder
     }))

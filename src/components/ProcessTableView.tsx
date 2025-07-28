@@ -33,17 +33,21 @@ function ProcessTableView() {
   useEffect(() => {
     if (elements) {
       const elems: cytoscape.ElementDefinition[] = elements.filter((elem) => elem.data.type === 'node');
-      console.log(elems);
       setTable(elems);
-      setTableOrder({
-        nm: 'Name',
-        asc: 'Asc'
-      })
+      if (tableOrder) {
+        setTableOrder({
+          ...tableOrder,
+        })
+      } else {
+        setTableOrder({
+          nm: 'Name',
+          asc: 'Asc'
+        })
+      }
     }
   }, [elements]);
 
   useEffect(() => {
-    console.log("sort1", tableOrder);
     if (!table) return;
     let ordering: OrdItm[] = [tableOrder];
     if (tableOrder.nm == 'Name') {
@@ -57,7 +61,6 @@ function ProcessTableView() {
         { nm: "Name", asc: 'Asc' },
       ]
     }
-    console.log("sort2", ordering);
     const sorted_items = sort_items(table, ordering);
     setTable([...sorted_items]);
   }, [tableOrder])
