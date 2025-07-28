@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {commands, HttpNotify, ProcessInfo, SockInfo} from "@/bindings.ts";
 import {useSocketsStore} from "@/stores/socketsStore.ts";
 import {useProcessesStore} from "@/stores/processesStore.ts";
-import cytoscape from 'cytoscape';
+import cytoscape, {EventObject} from 'cytoscape';
 import CytoscapeComponent from 'react-cytoscapejs';
 import {useElementsStore} from "@/stores/elementsStore.ts";
 import {get_mem} from "@/components/utils.ts";
@@ -82,21 +82,28 @@ function ProcessGraphView() {
     });
   }
 
+  const handleSelect = (event: EventObject) => {
+    console.log('handleSelect')
+    const node = event.target;
+    setSelectedItem(node.data());
+  }
+  const handleUnSelect = (_event: EventObject) => {
+    console.log('handleUnSelect')
+    setSelectedItem(undefined);
+  }
+
+
   useEffect(() => {
     if (!cyInstance) return;
     const cy = cyInstance;
 
-    cy.on('select', 'node', (event) => {
-      const node = event.target;
-      console.log('select node', node);
-      setSelectedItem(node.data());
-    });
+    cy.on('select', 'node', handleSelect);
+    cy.on('unselect', 'node', handleUnSelect);
 
-    cy.on('unselect', 'node', (_evt) => {
-      setSelectedItem(undefined);
-    });
-
-
+    return () => {
+      cy.off('select', 'node', handleSelect);
+      cy.off('unselect', 'node', handleUnSelect);
+    };
   }, [cyInstance]);
 
   useEffect(() => {
@@ -117,7 +124,7 @@ function ProcessGraphView() {
         };
         cy.animate({
           pan: pan,
-          duration: 500, // ms 단위
+          duration: 500,
           easing: 'ease-in-out' // 'linear', 'ease-in', 'ease-out', 등
         });
         // cy.pan(pan);
@@ -155,7 +162,6 @@ function ProcessGraphView() {
         data: {
           id: `${process.pid}`,
           type: 'node',
-          // source: `${process.pid}`,
           label: `${process.pid}`,
           color: color,
           process: process,
@@ -206,7 +212,7 @@ function ProcessGraphView() {
 
   }, [processes?.length, sockets?.length]);
 
-  const layout: cytoscape.LayoutOptions = {
+  const coseLayout: cytoscape.CoseLayoutOptions = {
     name: "cose",
     // refresh?: number
     // randomize?: boolean
@@ -225,6 +231,7 @@ function ProcessGraphView() {
     gravity: 0.05,
     numIter: 1000,
   }
+
   const style: React.CSSProperties = {
     width: "100%",
     height: "100vh"
@@ -248,17 +255,9 @@ function ProcessGraphView() {
     {
       selector: 'node:selected',
       style: {
-        // label: 'data(info)',
-        // 'text-valign': 'center',
-        // 'text-halign': 'center',
         'background-color': '#a63131',
         'border-color': '#af0707',
         'border-width': 10,
-        // color: '#000',
-        // width: 150,
-        // height: 150,
-        // 'text-wrap': 'wrap',
-        // 'font-size': 20,
       }
     },
     {
@@ -305,7 +304,7 @@ function ProcessGraphView() {
           // @ts-ignore
         <CytoscapeComponent
           className="graph"
-          layout={layout}
+          layout={coseLayout}
           elements={elements}
           style={{
             ...style,
