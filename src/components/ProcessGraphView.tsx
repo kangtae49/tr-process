@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef} from 'react';
 import {commands, ProcessInfo, SockInfo} from "@/bindings.ts";
 import {useSocketsStore} from "@/stores/socketsStore.ts";
 import {useProcessesStore} from "@/stores/processesStore.ts";
@@ -19,6 +19,9 @@ function ProcessGraphView() {
   const selectedPid = useSelectedPidStore((state) => state.selectedPid);
   const setSelectedPid = useSelectedPidStore((state) => state.setSelectedPid);
   const cyRef = useRef<cytoscape.Core | null>(null);
+  const setCyRef = useCallback((cy: cytoscape.Core) => {
+    cyRef.current = cy;
+  }, []);
 
   useEffect(() => {
     if (!cyRef.current) return;
@@ -44,7 +47,18 @@ function ProcessGraphView() {
     if (target.length) {
       cy.nodes().unselect();
       target.select();
-      cy.fit(target, 300);
+
+      const selectedNode = cy.$(':selected');
+      if (selectedNode.nonempty()) {
+        const pos = selectedNode.position();
+        const pan = {
+          x: cy.width() / 2 - pos.x * cy.zoom(),
+          y: cy.height() / 2 - pos.y * cy.zoom(),
+        };
+        cy.pan(pan);
+      }
+      // cy.center(cy.nodes());
+      // cy.fit(target, 300);
     }
   }, [selectedPid, cyRef.current]);
 
@@ -168,17 +182,17 @@ function ProcessGraphView() {
     {
       selector: 'node:selected',
       style: {
-        label: 'data(info)',
-        'text-valign': 'center',
-        'text-halign': 'center',
+        // label: 'data(info)',
+        // 'text-valign': 'center',
+        // 'text-halign': 'center',
         'background-color': '#a63131',
         'border-color': '#af0707',
         'border-width': 10,
-        color: '#000',
-        width: 150,
-        height: 150,
-        'text-wrap': 'wrap',
-        'font-size': 20,
+        // color: '#000',
+        // width: 150,
+        // height: 150,
+        // 'text-wrap': 'wrap',
+        // 'font-size': 20,
       }
     },
     {
@@ -199,6 +213,7 @@ function ProcessGraphView() {
   }
 
 
+
   return (
     <AutoSizer>
       {({ height, width }) => (
@@ -213,7 +228,7 @@ function ProcessGraphView() {
           height
         }}
         stylesheet={stylesheet}
-        cy={(cy) => { cyRef.current = cy; }}
+        cy={setCyRef}
       />
       )}
     </AutoSizer>

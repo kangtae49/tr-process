@@ -1,74 +1,99 @@
-import AutoSizer from 'react-virtualized-auto-sizer'
-import { FixedSizeList as List } from 'react-window'
-import {useEffect, useRef, useState} from "react";
+import {useEffect} from "react";
 import cytoscape from 'cytoscape';
 import {useElementsStore} from "@/stores/elementsStore.ts";
-import {get_mem} from "@/components/utils.ts";
-import {useSelectedPidStore} from "@/stores/selectedPidStore.ts";
+import { FontAwesomeIcon as Icon } from '@fortawesome/react-fontawesome'
+import {
+  faCircleChevronDown,
+  faCircleChevronUp,
+  faCircleMinus,
+} from '@fortawesome/free-solid-svg-icons'
+import { useTableOrderStore } from '@/stores/tableOrderStore';
+import {OrdAsc, OrdBy, OrdItm, sort_items} from "@/components/ordering.ts";
+import ProcessTableListView from "@/components/ProcessTableListView.tsx";
+import {useTableStore} from "@/stores/tableStore.ts";
 
 function ProcessTableView() {
-  const listRef = useRef<List>(null);
   const elements = useElementsStore((state) => state.elements);
-  const [nodes, setNodes] = useState<cytoscape.ElementDefinition[] | undefined>(undefined);
-  const setSelectedPid = useSelectedPidStore((state) => state.setSelectedPid);
-  const selectedPid = useSelectedPidStore((state) => state.selectedPid);
+  const tableOrder = useTableOrderStore((state) => state.tableOrder);
+  const table = useTableStore((state) => state.table);
+  const setTable = useTableStore((state) => state.setTable);
+  const setTableOrder = useTableOrderStore((state) => state.setTableOrder);
 
-  const clickPid = (pid: string | undefined) => {
-    console.log(pid);
-    if (pid) {
-      setSelectedPid(pid);
+  const clickOrder = (nm: OrdBy): void => {
+    let asc: OrdAsc = 'Asc'
+    if (tableOrder.nm == nm) {
+      asc = tableOrder.asc == 'Asc' ? 'Desc' : 'Asc'
     }
+    setTableOrder({
+      nm,
+      asc
+    })
   }
 
   useEffect(() => {
     if (elements) {
       const elems: cytoscape.ElementDefinition[] = elements.filter((elem) => elem.data.type === 'node');
       console.log(elems);
-      setNodes(elems);
+      setTable(elems);
+      setTableOrder({
+        nm: 'Name',
+        asc: 'Asc'
+      })
     }
   }, [elements]);
 
-  if (!nodes) return null;
+  useEffect(() => {
+    console.log("sort1", tableOrder);
+    if (!table) return;
+    let ordering: OrdItm[] = [tableOrder];
+    if (tableOrder.nm == 'Name') {
+      ordering = [
+        tableOrder,
+        { nm: "Pid", asc: 'Asc' },
+      ]
+    } else {
+      ordering = [
+        tableOrder,
+        { nm: "Name", asc: 'Asc' },
+      ]
+    }
+    console.log("sort2", ordering);
+    const sorted_items = sort_items(table, ordering);
+    setTable([...sorted_items]);
+  }, [tableOrder])
+
+  let iconPid = faCircleMinus
+  let iconPpid = faCircleMinus
+  let iconName = faCircleMinus
+  let iconAddr = faCircleMinus
+  let iconPort = faCircleMinus
+  let iconMemory = faCircleMinus
+
+  if (tableOrder.nm == 'Pid') {
+    iconPid = tableOrder.asc == 'Asc' ? faCircleChevronUp : faCircleChevronDown
+  } else if (tableOrder.nm == 'Ppid') {
+    iconPpid = tableOrder.asc == 'Asc' ? faCircleChevronUp : faCircleChevronDown
+  } else if (tableOrder.nm == 'Name') {
+    iconName = tableOrder.asc == 'Asc' ? faCircleChevronUp : faCircleChevronDown
+  } else if (tableOrder.nm == 'Addr') {
+    iconAddr = tableOrder.asc == 'Asc' ? faCircleChevronUp : faCircleChevronDown
+  } else if (tableOrder.nm == 'Port') {
+    iconPort = tableOrder.asc == 'Asc' ? faCircleChevronUp : faCircleChevronDown
+  } else if (tableOrder.nm == 'Memory') {
+    iconMemory = tableOrder.asc == 'Asc' ? faCircleChevronUp : faCircleChevronDown
+  }
 
   return (
     <div className="table-pane">
       <div className="header">
-        <div className="col pid">pid</div>
-        <div className="col ppid">ppid</div>
-        <div className="col name">name</div>
-        <div className="col addr">addr</div>
-        <div className="col port">port</div>
-        <div className="col memory">memory</div>
-
+        <div className="col pid"><Icon icon={iconPid} onClick={() => clickOrder('Pid')} />pid</div>
+        <div className="col ppid"><Icon icon={iconPpid} onClick={() => clickOrder('Ppid')} />ppid</div>
+        <div className="col name"><Icon icon={iconName} onClick={() => clickOrder('Name')} />name</div>
+        <div className="col addr"><Icon icon={iconAddr} onClick={() => clickOrder('Addr')} />addr</div>
+        <div className="col port"><Icon icon={iconPort} onClick={() => clickOrder('Port')} />port</div>
+        <div className="col memory"><Icon icon={iconMemory} onClick={() => clickOrder('Memory')} />memory</div>
       </div>
-      <div className="table">
-        <AutoSizer>
-          {({ height, width }) => (
-            <List
-              className="folder-tree"
-              height={height}
-              itemCount={nodes?.length}
-              itemSize={18}
-              width={width}
-              ref={listRef}
-            >
-              {({ index, style }) => {
-                const item = nodes[index];
-                return item ? (
-                  <div className="row" key={index} style={{...style, backgroundColor: `${selectedPid == item.data.id ? '#f4a261': null}`}} onClick={() => clickPid(item.data.id)}>
-                    <div className="col pid">{item.data.id}</div>
-                    <div className="col ppid">{item.data.process?.parent || ''}</div>
-                    <div className="col name">{item.data.process?.name || ''}</div>
-                    <div className="col addr">{item.data.socket?.local_addr || ''}</div>
-                    <div className="col port">{item.data.socket?.local_port || ''}</div>
-                    <div className="col memory">{get_mem(item.data.process?.memory) || ''}</div>
-                  </div>
-                ) : null
-              }}
-            </List>
-          )}
-        </AutoSizer>
-      </div>
+      <ProcessTableListView />
     </div>
   )
 }

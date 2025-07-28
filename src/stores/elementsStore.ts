@@ -3,7 +3,7 @@ import cytoscape from "cytoscape";
 
 export interface ElementsStore {
   elements: cytoscape.ElementDefinition[] | undefined,
-  setElements: (sockets: cytoscape.ElementDefinition[]) => void
+  setElements: (elements: cytoscape.ElementDefinition[]) => void
 }
 
 export const useElementsStore = create<ElementsStore>((set) => ({

@@ -8,6 +8,12 @@ html, body, #root, .container {
 }
 
 :root {
+  --selected-color: #f4a261;
+  --unselected-color: #c5c5cd;
+  --hover-color: #bd623c;
+  --scale: scale(1.3);
+
+
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 24px;
@@ -78,18 +84,25 @@ html, body, #root, .container {
 
 
 .table-pane .header .pid {flex: 0 0 40px;}
-.table-pane .header .ppid {flex: 0 0 40px;}
-.table-pane .header .name {flex: 1}
+.table-pane .header .ppid {flex: 0 0 50px;}
+.table-pane .header .name {flex: 1; min-width:50px ;overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
 .table-pane .header .addr {flex: 0 0 80px;}
 .table-pane .header .port {flex: 0 0 50px;}
 .table-pane .header .memory {flex: 0 0 80px;}
 
-.table-pane .table .row .col {padding-left:5px;}
+.table-pane .table .row .col {padding-left:5px; }
 .table-pane .table .row .pid {flex: 0 0 40px; text-align: right;}
 .table-pane .table .row .ppid {flex: 0 0 40px; text-align: right;}
-.table-pane .table .row .name {flex: 1; text-align: left;}
+.table-pane .table .row .name {flex: 1; text-align: left; }
 .table-pane .table .row .addr {flex: 0 0 80px; text-align: right;}
 .table-pane .table .row .port {flex: 0 0 50px; text-align: right;}
 .table-pane .table .row .memory {flex: 0 0 80px; text-align: right; }
 
+
+.fa-circle-chevron-up {color: var(--selected-color); margin-right: 5px;}
+.fa-circle-chevron-up:hover {transform: var(--scale); color: var(--hover-color);}
+.fa-circle-chevron-down {color: var(--selected-color); margin-right: 5px;}
+.fa-circle-chevron-down:hover {transform: var(--scale); color: var(--hover-color);}
+.fa-circle-minus {color: var(--unselected-color); margin-right: 5px;}
+.fa-circle-minus:hover {transform: var(--scale); color: var(--hover-color);}
 
