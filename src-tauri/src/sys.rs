@@ -125,12 +125,12 @@ pub fn get_sockets() -> Result<Vec<SockInfo>> {
 #[derive(Type, Serialize, Deserialize, Clone, Debug)]
 pub struct ProcessInfo {
     pid: u32,
-    name: String,
+    name: Option<String>,
     exe: Option<String>,
-    cpu_usage: f32,
-    memory: u64,
-    disk_usage: DiskInfo,
-    accumulated_cpu_time: u64,
+    cpu_usage: Option<f32>,
+    memory: Option<u64>,
+    disk_usage: Option<DiskInfo>,
+    accumulated_cpu_time: Option<u64>,
     parent: Option<u32>,
 }
 
@@ -158,12 +158,12 @@ impl From<&DiskUsage> for DiskInfo {
 impl From<&Process> for ProcessInfo {
     fn from(process: &Process) -> Self {
         let pid = process.pid().as_u32();
-        let name = process.name().to_string_lossy().to_string();
+        let name = Some(process.name().to_string_lossy().to_string());
         let exe = process.exe().map(|p|p.to_string_lossy().to_string());
-        let cpu_usage = process.cpu_usage();
-        let memory = process.memory();
-        let disk_usage = DiskInfo::from(&process.disk_usage());
-        let accumulated_cpu_time = process.accumulated_cpu_time();
+        let cpu_usage = Some(process.cpu_usage());
+        let memory = Some(process.memory());
+        let disk_usage = Some(DiskInfo::from(&process.disk_usage()));
+        let accumulated_cpu_time = Some(process.accumulated_cpu_time());
         let parent = process.parent().map(|p| p.as_u32());
         Self {
             pid,

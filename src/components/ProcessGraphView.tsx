@@ -17,15 +17,17 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { emit } from '@tauri-apps/api/event';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
+import {useCyStore} from "@/stores/cyStore.ts";
 
 export type Item = {
   id: string
   type: string
   label: string
   color: string
-  process?: ProcessInfo
+  process: ProcessInfo
   socket?: SockInfo
   info: string
+  children?: Item[]
 }
 
 
@@ -38,7 +40,9 @@ function ProcessGraphView() {
   const setElements = useElementsStore((state) => state.setElements);
   const selectedItem = useSelectedItemStore((state) => state.selectedItem);
   const setSelectedItem = useSelectedItemStore((state) => state.setSelectedItem);
-  const [cyInstance, setCyInstance] = useState<cytoscape.Core | null>(null);
+  const cyInstance = useCyStore((state) => state.cyInstance);
+  const setCyInstance = useCyStore((state) => state.setCyInstance);
+
 
   const shellShowItemInFolder = async (path: string | undefined | null) => {
     if (!path) return
@@ -181,7 +185,9 @@ function ProcessGraphView() {
             type: 'node',
             label: `${process.parent}`,
             color: '#aeaaaa',
-            process: undefined,
+            process: {
+              pid: process.parent,
+            },
             socket: undefined,
             info: `pid: ${process.parent}`,
           }

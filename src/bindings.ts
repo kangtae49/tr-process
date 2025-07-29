@@ -51,7 +51,7 @@ async runHttpServer(servInfo: ServInfo) : Promise<Result<ServInfo, ApiError>> {
 
 export type ApiError = { Error: string } | { JsonError: string } | { TokioError: string } | { IoError: string } | { NetstatError: string }
 export type DiskInfo = { read_bytes: number; write_bytes: number; total_read_bytes: number; total_write_bytes: number }
-export type ProcessInfo = { pid: number; name: string; exe?: string | null; cpu_usage: number; memory: number; disk_usage: DiskInfo; accumulated_cpu_time: number; parent?: number | null }
+export type ProcessInfo = { pid: number; name?: string | null; exe?: string | null; cpu_usage?: number | null; memory?: number | null; disk_usage?: DiskInfo | null; accumulated_cpu_time?: number | null; parent?: number | null }
 export type ServInfo = { name: string; ip: string; port: number; path: string }
 export type SockInfo = { local_addr: string; local_port: number; protocol: SockProtocol; pids: number[]; remote_addr?: string | null; remote_port?: number | null; state?: SockState | null }
 export type SockProtocol = "Tcp" | "Udp"

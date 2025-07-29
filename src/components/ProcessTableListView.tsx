@@ -38,7 +38,7 @@ function ProcessTableListView() {
       <AutoSizer>
         {({ height, width }) => (
           <List
-            className="folder-tree"
+            className="table-list"
             height={height}
             itemCount={table?.length}
             itemSize={ITEM_SIZE}
@@ -48,7 +48,7 @@ function ProcessTableListView() {
             {({ index, style }) => {
               const item = table[index];
               return item ? (
-                <div className="row" key={index} style={{...style, backgroundColor: `${selectedItem?.id == item.id ? '#f4a261': null}`}} onClick={() => clickItem(item)}>
+                <div className="row" key={index} style={{...style, backgroundColor: `${selectedItem?.id == item.id ? '#bfd2e3': null}`}} onClick={() => clickItem(item)}>
                   <div className="col pid">{item.id}</div>
                   <div className="col ppid">{item.process?.parent || ''}</div>
                   <div className="col name">{item.process?.name || ''}</div>
