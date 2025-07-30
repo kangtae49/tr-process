@@ -5,23 +5,18 @@ import {Item} from "@/components/ProcessGraphView.tsx";
 import {get_mem} from "@/components/utils.ts";
 import {useSelectedItemStore} from "@/stores/selectedItemStore.ts";
 import cytoscape from "cytoscape";
-import {useElementsStore} from "@/stores/elementsStore.ts";
 import {useTreeStore} from "@/stores/treeStore.ts";
+import {useElementsStore} from "@/stores/elementsStore.ts";
 
 const ITEM_SIZE = 18;
-
-
 
 function ProcessTreeListView() {
   const selectedItem = useSelectedItemStore((state) => state.selectedItem);
   const setSelectedItem = useSelectedItemStore((state) => state.setSelectedItem);
-  const elements = useElementsStore((state) => state.elements);
   const tree = useTreeStore((state) => state.tree);
+  const elements = useElementsStore((state) => state.elements);
   const setTree = useTreeStore((state) => state.setTree);
-
   const listRef = useRef<List>(null);
-
-
 
   const clickItem = (item: Item | undefined) => {
     console.log(item);
@@ -38,16 +33,20 @@ function ProcessTreeListView() {
       return;
     }
     listRef.current.scrollToItem(idx, "center");
-  }, [selectedItem, tree, elements]);
+  }, [selectedItem, tree]);
 
   useEffect(() => {
-    setTree(getTree(elements));
+    if(elements === undefined) return;
+    const t = getTree(elements);
+    if (t != undefined) {
+      setTree(t);
+      console.log('tree !!!', t);
+    }
   }, [elements]);
 
 
-  if (!tree) return null;
   console.log('render tree');
-  return (
+  return tree && (
     <div className="tree">
       <AutoSizer>
         {({ height, width }) => (
@@ -90,9 +89,9 @@ function ProcessTreeListView() {
 export default ProcessTreeListView;
 
 
-function getTree(elements: cytoscape.ElementDefinition[] | undefined): Item [] {
+export function getTree(elements: cytoscape.ElementDefinition[] | undefined): Item [] | undefined {
   console.log('getTree');
-  if (!elements) return [];
+  if (!elements) return undefined;
   let itemList = elements
       .map((elem) => elem.data)
       .filter((data) => (data.type === 'node'))

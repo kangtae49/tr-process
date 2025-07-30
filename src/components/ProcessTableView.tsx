@@ -12,6 +12,9 @@ import ProcessTableListView from "@/components/ProcessTableListView.tsx";
 import {useTableStore} from "@/stores/tableStore.ts";
 import {useSelectedItemStore} from "@/stores/selectedItemStore.ts";
 import {Item} from "@/components/ProcessGraphView.tsx";
+import cytoscape from "cytoscape";
+import {getTree} from "@/components/ProcessTreeListView.tsx";
+import {useTreeStore} from "@/stores/treeStore.ts";
 
 function ProcessTableView() {
   const elements = useElementsStore((state) => state.elements);
@@ -19,6 +22,7 @@ function ProcessTableView() {
   const table = useTableStore((state) => state.table);
   const setTable = useTableStore((state) => state.setTable);
   const setTableOrder = useTableOrderStore((state) => state.setTableOrder);
+  const setTree = useTreeStore((state) => state.setTree);
 
   const clickOrder = (nm: OrdBy): void => {
     let asc: OrdAsc = 'Asc'
@@ -48,13 +52,17 @@ function ProcessTableView() {
           asc: 'Asc'
         })
       }
+      const t = getTree(elements);
+      if (t != undefined) {
+        setTree(t);
+        console.log('tree @@@', t);
+      }
     }
   }, [elements]);
 
   useEffect(() => {
     if (!table) return;
-    let ordering: OrdItm[] = [tableOrder];
-    ordering = [
+    let ordering: OrdItm[] = [
       tableOrder,
       { nm: "Ppid", asc: 'Asc' },
       { nm: "Pid", asc: 'Asc' },
