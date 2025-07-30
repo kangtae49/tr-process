@@ -56,11 +56,11 @@ html, body, #root, .container {
 }
 
 .left-pane .table-pane {
-  flex: 0.5;
+  flex: 1;
 }
 
 .left-pane .tree-pane {
-  flex: 0.5;
+  flex: 1;
 }
 
 

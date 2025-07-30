@@ -54,17 +54,26 @@ function ProcessTableView() {
   useEffect(() => {
     if (!table) return;
     let ordering: OrdItm[] = [tableOrder];
-    if (tableOrder.nm == 'Name') {
-      ordering = [
-        tableOrder,
-        { nm: "Pid", asc: 'Asc' },
-      ]
-    } else {
-      ordering = [
-        tableOrder,
-        { nm: "Name", asc: 'Asc' },
-      ]
-    }
+    ordering = [
+      tableOrder,
+      { nm: "Ppid", asc: 'Asc' },
+      { nm: "Pid", asc: 'Asc' },
+      { nm: "Name", asc: 'Asc' },
+    ]
+    // if (tableOrder.nm == 'Name') {
+    //   ordering = [
+    //     tableOrder,
+    //     { nm: "Ppid", asc: 'Asc' },
+    //     { nm: "Pid", asc: 'Asc' },
+    //   ]
+    // } else {
+    //   ordering = [
+    //     tableOrder,
+    //     { nm: "Name", asc: 'Asc' },
+    //     { nm: "Ppid", asc: 'Asc' },
+    //     { nm: "Pid", asc: 'Asc' },
+    //   ]
+    // }
     const sorted_items = sort_items(table, ordering);
     setTable([...sorted_items]);
   }, [tableOrder]);
@@ -95,8 +104,8 @@ function ProcessTableView() {
   return (
     <div className="table-pane">
       <div className="header">
-        <div className="col pid"><Icon icon={iconPid} onClick={() => clickOrder('Pid')} />pid</div>
         <div className="col ppid"><Icon icon={iconPpid} onClick={() => clickOrder('Ppid')} />ppid</div>
+        <div className="col pid"><Icon icon={iconPid} onClick={() => clickOrder('Pid')} />pid</div>
         <div className="col name"><Icon icon={iconName} onClick={() => clickOrder('Name')} />name</div>
         <div className="col addr"><Icon icon={iconAddr} onClick={() => clickOrder('Addr')} />addr</div>
         <div className="col port"><Icon icon={iconPort} onClick={() => clickOrder('Port')} />port</div>

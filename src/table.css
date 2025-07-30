@@ -2,7 +2,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    height: 100vh;
+    height: 100%;
     font-size: 0.8em;
     padding: 5px;
     border: 1px solid #ccc;
@@ -31,16 +31,16 @@
 }
 
 .table-pane .header {overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
-.table-pane .header .pid {flex: 0 0 40px;}
 .table-pane .header .ppid {flex: 0 0 50px;}
+.table-pane .header .pid {flex: 0 0 40px;}
 .table-pane .header .name {flex: 1; min-width:50px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
 .table-pane .header .addr {flex: 0 0 80px;}
 .table-pane .header .port {flex: 0 0 50px;}
 .table-pane .header .memory {flex: 0 0 80px;}
 
 .table-pane .table .row .col {padding-left:5px; }
-.table-pane .table .row .pid {flex: 0 0 40px; text-align: right;}
 .table-pane .table .row .ppid {flex: 0 0 40px; text-align: right;}
+.table-pane .table .row .pid {flex: 0 0 40px; text-align: right;}
 .table-pane .table .row .name {flex: 1; text-align: left; }
 .table-pane .table .row .addr {flex: 0 0 80px; text-align: right;}
 .table-pane .table .row .port {flex: 0 0 50px; text-align: right;}

@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import {commands, HttpNotify, ProcessInfo, SockInfo} from "@/bindings.ts";
 import {useSocketsStore} from "@/stores/socketsStore.ts";
 import {useProcessesStore} from "@/stores/processesStore.ts";
@@ -28,6 +28,7 @@ export type Item = {
   socket?: SockInfo
   info: string
   children?: Item[]
+  parent?: Item
 }
 
 

@@ -14,19 +14,17 @@ function ProcessTableListView() {
   const setSelectedItem = useSelectedItemStore((state) => state.setSelectedItem);
   const listRef = useRef<List>(null);
 
-  const clickItem = (item: Item) => {
+  const clickItem = (item: Item | undefined) => {
     console.log(item);
-    if (item) {
-      setSelectedItem(item);
-    }
+    setSelectedItem(item);
   }
 
   useEffect(() => {
+    console.log('table selected');
     if (selectedItem == undefined || !listRef.current) return;
     const idx = table?.findIndex((item) => item.id == selectedItem.id);
-    // console.log('idx', idx);
+    console.log('tree selected', idx);
     if (idx) {
-      // listRef.current.scrollTo(idx);
       listRef.current.scrollToItem(idx, "center");
     }
   }, [selectedItem]);
@@ -48,13 +46,13 @@ function ProcessTableListView() {
             {({ index, style }) => {
               const item = table[index];
               return item ? (
-                <div className="row" key={index} style={{...style, backgroundColor: `${selectedItem?.id == item.id ? '#bfd2e3': null}`}} onClick={() => clickItem(item)}>
-                  <div className="col pid">{item.id}</div>
-                  <div className="col ppid">{item.process?.parent || ''}</div>
-                  <div className="col name">{item.process?.name || ''}</div>
-                  <div className="col addr">{item.socket?.local_addr || ''}</div>
-                  <div className="col port">{item.socket?.local_port || ''}</div>
-                  <div className="col memory">{get_mem(item.process?.memory) || ''}</div>
+                <div className="row" key={index} style={{...style, backgroundColor: `${selectedItem?.id == item.id ? '#bfd2e3': null}`}} >
+                  <div className="col ppid" onClick={() => clickItem(item.parent)}>{item.process?.parent || ''}</div>
+                  <div className="col pid" onClick={() => clickItem(item)}>{item.id}</div>
+                  <div className="col name" title={getTitle(item)} onClick={() => clickItem(item)}>{item.process?.name || ''}</div>
+                  <div className="col addr" onClick={() => clickItem(item)}>{item.socket?.local_addr || ''}</div>
+                  <div className="col port" onClick={() => clickItem(item)}>{item.socket?.local_port || ''}</div>
+                  <div className="col memory" onClick={() => clickItem(item)}>{get_mem(item.process?.memory) || ''}</div>
                 </div>
               ) : null
             }}
@@ -66,3 +64,7 @@ function ProcessTableListView() {
 }
 
 export default ProcessTableListView;
+
+function getTitle(item: Item): string {
+  return item.process.exe || item.process.name || item.id;
+}

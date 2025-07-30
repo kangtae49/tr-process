@@ -5,7 +5,9 @@ import ProcessTreeView from "@/components/ProcessTreeView.tsx";
 import ProcessGraphView from "@/components/ProcessGraphView.tsx";
 
 function ProcessView() {
-  const [isResizing, setIsResizing] = useState(false)
+  const [isResizing, setIsResizing] = useState(false);
+  const [isResizing2, setIsResizing2] = useState(false);
+
   return (
     <div className="main-pane">
       <SplitPane
@@ -17,13 +19,23 @@ function ProcessView() {
         onDragFinished={() => setIsResizing(false)}
       >
         <div className="left-pane">
-          <ProcessTableView />
-          <ProcessTreeView />
+          <SplitPane
+            split="horizontal"
+            minSize={0}
+            defaultSize={200}
+            onDragStarted={() => setIsResizing2(true)}
+            onDragFinished={() => setIsResizing2(false)}
+          >
+            <ProcessTableView />
+            <ProcessTreeView />
+
+          </SplitPane>
         </div>
         <div style={{ position: 'relative', height: '100%' }}>
-          {isResizing && <div className="iframe-overlay" />}
+
           <ProcessGraphView />
         </div>
+        {(isResizing || isResizing2) && <div className="iframe-overlay" />}
       </SplitPane>
     </div>
   )
