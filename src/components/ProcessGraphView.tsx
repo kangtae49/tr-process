@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useCallback, useEffect} from 'react';
 import {commands, HttpNotify, ProcessInfo, SockInfo} from "@/bindings.ts";
 import {useSocketsStore} from "@/stores/socketsStore.ts";
 import {useProcessesStore} from "@/stores/processesStore.ts";
@@ -88,34 +88,35 @@ function ProcessGraphView() {
   }
 
 
-  const handleSelect = (event: EventObject) => {
+  const handleSelect = useCallback((event: EventObject) => {
     console.log('handleSelect')
     const node = event.target;
     setSelectedItem(node.data());
-  }
-  const handleUnSelect = (_event: EventObject) => {
-    console.log('handleUnSelect')
-    setSelectedItem(undefined);
-  }
+  }, [])
 
   useEffect(() => {
     if (!cyInstance) return;
     const cy = cyInstance;
+    console.log('register handle')
     cy.on('select', 'node', handleSelect);
-    cy.on('unselect', 'node', handleUnSelect);
 
     return () => {
+      console.log('unregister handle')
       cy.off('select', 'node', handleSelect);
-      cy.off('unselect', 'node', handleUnSelect);
     };
-  }, []);
+  }, [cyInstance]);
 
   useEffect(() => {
     if (!cyInstance) return;
     if (!selectedItem) return;
+    if (cyInstance.$(':selected')?.data()?.id == selectedItem.id) return;
+
     const cy = cyInstance;
+
+
     const target = cy.$(`#${selectedItem.id}`);
-    if (target.length) {
+    console.log('animation before', target);
+    if (target.length > 0) {
       cy.nodes().unselect();
       target.select();
 

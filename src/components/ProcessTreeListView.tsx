@@ -112,7 +112,6 @@ function appendChildren(rootList: Item [], itemList: Item []) {
     const children = getChildren(itemList, root);
     children.forEach((c) => {
       c.parent = root
-      console.log('parent:', c.parent);
     })
     root.children = children;
     const pids = children.map((data) => data.process.pid);
