@@ -87,6 +87,7 @@ function ProcessGraphView() {
     });
   }
 
+
   const handleSelect = (event: EventObject) => {
     console.log('handleSelect')
     const node = event.target;
@@ -97,11 +98,9 @@ function ProcessGraphView() {
     setSelectedItem(undefined);
   }
 
-
   useEffect(() => {
     if (!cyInstance) return;
     const cy = cyInstance;
-
     cy.on('select', 'node', handleSelect);
     cy.on('unselect', 'node', handleUnSelect);
 
@@ -109,7 +108,7 @@ function ProcessGraphView() {
       cy.off('select', 'node', handleSelect);
       cy.off('unselect', 'node', handleUnSelect);
     };
-  }, [cyInstance]);
+  }, []);
 
   useEffect(() => {
     if (!cyInstance) return;
@@ -213,11 +212,11 @@ function ProcessGraphView() {
     });
     const initialEdges: cytoscape.ElementDefinition[] = [...unique(pidEdges)]; //.sort((a, b) => Number(a.data.source) - Number(b.data.source));
     const nodes_and_edges = [...initialNodes, ...initialEdges];
-
+    console.log('setElements')
     setElements(nodes_and_edges);
 
 
-  }, [processes?.length, sockets?.length]);
+  }, [processes, sockets]);
 
   const coseLayout: cytoscape.CoseLayoutOptions = {
     name: "cose",
@@ -279,6 +278,7 @@ function ProcessGraphView() {
       }
     }
   ];
+
 
   if (!elements) {
     return <div>Loading...</div>;

@@ -30,7 +30,7 @@ function ProcessTreeListView() {
 
   useEffect(() => {
     console.log('tree selected');
-    if (selectedItem == undefined || !listRef.current) return;
+    if (selectedItem == undefined || !tree || !listRef.current) return;
 
     const idx = getIndexFromItem(tree, selectedItem);
     console.log('tree selected', idx, tree);
@@ -44,7 +44,8 @@ function ProcessTreeListView() {
   }, [elements]);
 
 
-  if (!tree || !elements) return null;
+  if (!tree) return null;
+  console.log('render tree');
   return (
     <div className="tree">
       <AutoSizer>
@@ -52,7 +53,7 @@ function ProcessTreeListView() {
           <List
             className="tree-list"
             height={height}
-            itemCount={getCountOfTreeItems(elements)}
+            itemCount={getCountOfTreeItems(tree)}
             itemSize={ITEM_SIZE}
             width={width}
             ref={listRef}
@@ -89,6 +90,7 @@ export default ProcessTreeListView;
 
 
 function getTree(elements: cytoscape.ElementDefinition[] | undefined): Item [] {
+  console.log('getTree');
   if (!elements) return [];
   let itemList = elements
       .map((elem) => elem.data)
@@ -108,7 +110,10 @@ function getTree(elements: cytoscape.ElementDefinition[] | undefined): Item [] {
 function appendChildren(rootList: Item [], itemList: Item []) {
   for (const root of rootList) {
     const children = getChildren(itemList, root);
-    children.forEach((c) => {c.parent = root})
+    children.forEach((c) => {
+      c.parent = root
+      console.log('parent:', c.parent);
+    })
     root.children = children;
     const pids = children.map((data) => data.process.pid);
     itemList = itemList.filter((data) => !pids.includes(data.process.pid));
@@ -126,13 +131,28 @@ function getItemFromIndex(rootList: Item [], nth: number): [Item | undefined, nu
   const [item, index, depth] = getItemFromNth(rootList, nth, -1, 0);
   return [item, index, depth];
 }
-function getCountOfTreeItems(elements: cytoscape.ElementDefinition[]): number {
-  let itemList = elements
-    .map((elem) => elem.data)
-    .filter((data) => (data.type === 'node'))
-    .map((data)=> data as Item)
-  ;
-  return itemList.length;
+// function getCountOfTreeItems(elements: cytoscape.ElementDefinition[]): number {
+//   let itemList = elements
+//     .map((elem) => elem.data)
+//     .filter((data) => (data.type === 'node'))
+//     .map((data)=> data as Item)
+//   ;
+//   return itemList.length;
+// }
+
+export function getCountOfTreeItems(treeItems: Item [] | undefined): number {
+  if (!treeItems) {
+    return 0
+  }
+  let count = treeItems.length
+  for (let idxItem = 0; idxItem < treeItems.length; idxItem++) {
+    const treeItem = treeItems[idxItem]
+    if (!treeItem.children?.length) {
+      continue
+    }
+    count += getCountOfTreeItems(treeItem.children)
+  }
+  return count
 }
 
 function getIndexFromItem(rootList: Item [] | undefined, item: Item): number | undefined {
@@ -190,20 +210,7 @@ function getNthFromItem(treeItems: Item [] | undefined, item: Item, curIdx = -1,
 
 }
 
-// export function getCount(treeItems: Item [] | undefined): number {
-//   if (!treeItems) {
-//     return 0
-//   }
-//   let count = treeItems.length
-//   for (let idxItem = 0; idxItem < treeItems.length; idxItem++) {
-//     const treeItem = treeItems[idxItem]
-//     if (treeItem.children?.length || 0 == 0) {
-//       continue
-//     }
-//     count += getCount(treeItem.children)
-//   }
-//   return count
-// }
+
 
 function getParentItem(item: Item, nth: number): Item | undefined {
   let curItem: Item | undefined = item;
