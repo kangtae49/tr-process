@@ -4,19 +4,21 @@ import {commands, HttpNotify} from "@/bindings";
 import {useProcessesStore} from "@/stores/processesStore.ts";
 import {useSocketsStore} from "@/stores/socketsStore.ts";
 import {useElementsStore} from "@/stores/elementsStore.ts";
-import {useTreeStore} from "@/stores/treeStore.ts";
+// import {useTreeStore} from "@/stores/treeStore.ts";
+import {useSelectedItemStore} from "@/stores/selectedItemStore.ts";
 
 function HttpNotifyListener() {
   const setProcesses = useProcessesStore((state) => state.setProcesses);
   const setSockets = useSocketsStore((state) => state.setSockets);
   const setElements = useElementsStore((state) => state.setElements);
-  const setTree = useTreeStore((state) => state.setTree);
+  const setSelectedItem = useSelectedItemStore((state) => state.setSelectedItem);
 
   useEffect(() => {
     const unlisten = listen<HttpNotify>('http', (event) => {
       let taskNotify = event.payload;
       if (taskNotify.cmd === "Refresh") {
         // setTree(undefined);
+        setSelectedItem(undefined);
         setElements(undefined);
         // setProcesses(undefined);
         // setSockets(undefined);

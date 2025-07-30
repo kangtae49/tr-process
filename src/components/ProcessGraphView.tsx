@@ -14,6 +14,8 @@ import {
   faArrowRotateRight,
   faMagnifyingGlassPlus,
   faMagnifyingGlassMinus,
+  faMinimize,
+  faMaximize,
 } from '@fortawesome/free-solid-svg-icons'
 import { emit } from '@tauri-apps/api/event';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
@@ -60,31 +62,74 @@ function ProcessGraphView() {
   const clickZoomIn = () => {
     const cy = cyInstance;
     if (!cy) return;
+    if (selectedItem) {
+      const selectedNode = cy.$(':selected');
 
-    const selectedNode = cy.$(':selected');
-    cy.animate({
-      fit: {
-        eles: selectedNode,
-        padding: 230,
-      },
-      duration: 300,
-      easing: 'ease-in-out',
-    });
+      cy.animate({
+        // fit: {
+        //   eles: selectedNode,
+        //   padding: 230,
+        // },
+        zoom: cy.zoom() * 1.3,
+        center: { eles: cy.elements(':selected') },
+        duration: 300,
+        easing: 'ease-in-out',
+      });
+    } else {
+      cy.zoom(cy.zoom() * 1.1);
+    }
 
   }
 
   const clickZoomOut = () => {
     const cy = cyInstance;
     if (!cy) return;
+    if (selectedItem) {
+      cy.animate({
+        // fit: {
+        //   eles: cy.elements(),
+        //   padding: 50
+        // },
+        zoom: cy.zoom() / 1.3,
+        center: { eles: cy.elements(':selected') },
+        duration: 500,
+        easing: 'ease-in-out'
+      });
+    } else {
+      cy.zoom(cy.zoom() / 1.1);
+    }
+  }
+  const clickZoomMin = () => {
+    const cy = cyInstance;
+    if (!cy) return;
+    if (selectedItem) {
+      const selectedNode = cy.$(':selected');
 
-    cy.animate({
-      fit: {
-        eles: cy.elements(),
-        padding: 50
-      },
-      duration: 500,
-      easing: 'ease-in-out'
-    });
+      cy.animate({
+        fit: {
+          eles: selectedNode,
+          padding: 230,
+        },
+        duration: 300,
+        easing: 'ease-in-out',
+      });
+    }
+
+  }
+
+  const clickZoomMax = () => {
+    const cy = cyInstance;
+    if (!cy) return;
+    if (selectedItem) {
+      cy.animate({
+        fit: {
+          eles: cy.elements(),
+          padding: 50
+        },
+        duration: 500,
+        easing: 'ease-in-out'
+      });
+    }
   }
 
 
@@ -294,11 +339,20 @@ function ProcessGraphView() {
         <div className="zoom-out">
           <Icon icon={faMagnifyingGlassMinus} onClick={() => clickZoomOut()} />
         </div>
+        <div className="zoom-in">
+          <Icon icon={faMagnifyingGlassPlus} onClick={() => clickZoomIn()} />
+        </div>
         {selectedItem && (
-          <div className="zoom-in">
-            <Icon icon={faMagnifyingGlassPlus} onClick={() => clickZoomIn()} />
-          </div>
+          <>
+            <div className="zoom-max">
+              <Icon icon={faMaximize} onClick={() => clickZoomMax()} />
+            </div>
+            <div className="zoom-min">
+              <Icon icon={faMinimize} onClick={() => clickZoomMin()} />
+            </div>
+          </>
         )}
+
         {selectedItem && selectedItem.process?.exe && (
           <div className="folder" onClick={() => shellShowItemInFolder(selectedItem.process?.exe)}><Icon icon={faFolder} /></div>
         )}

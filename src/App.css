@@ -120,4 +120,7 @@ html, body, #root, .container {
 .fa-file {color: var(--file-selected-color); margin-right: 5px; cursor: pointer;}
 .fa-file:hover {transform: var(--scale); color: var(--file-hover-color);}
 
-
+.fa-minimize {color: var(--selected-color); margin-right: 5px; cursor: pointer;}
+.fa-minimize:hover {transform: var(--scale); color: var(--hover-color);}
+.fa-maximize {color: var(--selected-color); margin-right: 5px; cursor: pointer;}
+.fa-maximize:hover {transform: var(--scale); color: var(--hover-color);}
