@@ -2,7 +2,7 @@ import React, {useCallback, useEffect} from 'react';
 import {commands, HttpNotify, ProcessInfo, SockInfo} from "@/bindings.ts";
 import {useSocketsStore} from "@/stores/socketsStore.ts";
 import {useProcessesStore} from "@/stores/processesStore.ts";
-import cytoscape, {EventObject} from 'cytoscape';
+import cytoscape, {CollectionReturnValue, EventObject, NodeCollection, NodeSingular} from 'cytoscape';
 import CytoscapeComponent from 'react-cytoscapejs';
 import {useElementsStore} from "@/stores/elementsStore.ts";
 import {get_mem} from "@/components/utils.ts";
@@ -63,13 +63,7 @@ function ProcessGraphView() {
     const cy = cyInstance;
     if (!cy) return;
     if (selectedItem) {
-      const selectedNode = cy.$(':selected');
-
       cy.animate({
-        // fit: {
-        //   eles: selectedNode,
-        //   padding: 230,
-        // },
         zoom: cy.zoom() * 1.3,
         center: { eles: cy.elements(':selected') },
         duration: 300,
@@ -86,10 +80,6 @@ function ProcessGraphView() {
     if (!cy) return;
     if (selectedItem) {
       cy.animate({
-        // fit: {
-        //   eles: cy.elements(),
-        //   padding: 50
-        // },
         zoom: cy.zoom() / 1.3,
         center: { eles: cy.elements(':selected') },
         duration: 500,
@@ -102,12 +92,12 @@ function ProcessGraphView() {
   const clickZoomMin = () => {
     const cy = cyInstance;
     if (!cy) return;
-    if (selectedItem) {
-      const selectedNode = cy.$(':selected');
 
+    if (selectedItem) {
       cy.animate({
         fit: {
-          eles: selectedNode,
+          // eles: cy.$(':selected'),
+          eles: cy.nodes(':selected'),
           padding: 230,
         },
         duration: 300,
@@ -133,31 +123,41 @@ function ProcessGraphView() {
   }
 
 
-  const handleSelect = useCallback((event: EventObject) => {
-    console.log('handleSelect')
+  const handleNodeSelect = useCallback((event: EventObject) => {
+    console.log('handleNodeSelect')
     const node = event.target;
     setSelectedItem(node.data());
+  }, [])
+  const handleNodeUnSelect = useCallback((_event: EventObject) => {
+    console.log('handleNodeUnSelect')
+    setSelectedItem(undefined);
+  }, [])
+
+  const handleEdgeSelect = useCallback((_event: EventObject) => {
+    console.log('handleEdgeSelect')
   }, [])
 
   useEffect(() => {
     if (!cyInstance) return;
     const cy = cyInstance;
-    console.log('register handle')
-    cy.on('select', 'node', handleSelect);
+    cy?.autounselectify(false);
+
+    cy.on('select', 'node', handleNodeSelect);
+    cy.on('unselect', 'node', handleNodeUnSelect);
+    cy.on('select', 'edge', handleEdgeSelect);
 
     return () => {
-      console.log('unregister handle')
-      cy.off('select', 'node', handleSelect);
+      cy.off('select', 'node', handleNodeSelect);
+      cy.off('select', 'edge', handleEdgeSelect);
     };
   }, [cyInstance]);
 
   useEffect(() => {
     if (!cyInstance) return;
     if (!selectedItem) return;
-    if (cyInstance.$(':selected')?.data()?.id == selectedItem.id) return;
 
     const cy = cyInstance;
-
+    const selectedNode = cy.$(':selected');
 
     const target = cy.$(`#${selectedItem.id}`);
     console.log('animation before', target);
@@ -165,7 +165,7 @@ function ProcessGraphView() {
       cy.nodes().unselect();
       target.select();
 
-      const selectedNode = cy.$(':selected');
+
       if (selectedNode.nonempty()) {
         const pos = selectedNode.position();
         const pan = {
@@ -177,10 +177,19 @@ function ProcessGraphView() {
           duration: 500,
           easing: 'ease-in-out' // 'linear', 'ease-in', 'ease-out', 등
         });
-        // cy.pan(pan);
       }
-      // cy.center(cy.nodes());
-      // cy.fit(target, 300);
+      cy.edges(':selected').unselect();
+      let current: CollectionReturnValue | NodeSingular = selectedNode;
+      while (true) {
+        console.log('hello');
+        const incomingEdge = current.incomers('edge');
+        if (incomingEdge.empty()) break;
+        incomingEdge.select();
+        const parentNodes = incomingEdge.sources();
+
+        if (parentNodes.empty()) break;
+        current = parentNodes.first();
+      }
     }
   }, [selectedItem]);
 
@@ -253,7 +262,8 @@ function ProcessGraphView() {
           source: `${process.parent}`,
           target: `${process.pid}`,
           label: `${process.parent}-${process.pid}`,
-        }
+        },
+        selectable: true
       }
     });
     const initialEdges: cytoscape.ElementDefinition[] = [...unique(pidEdges)]; //.sort((a, b) => Number(a.data.source) - Number(b.data.source));
@@ -322,7 +332,17 @@ function ProcessGraphView() {
         'target-arrow-shape': 'triangle',
         'arrow-scale': 1.5
       }
-    }
+    },
+    {
+      selector: 'edge:selected',
+      style: {
+        'line-color': '#a63131',
+        'target-arrow-color': '#af0707',
+        'width': 10,
+        'arrow-scale': 2
+      }
+    },
+
   ];
 
 
