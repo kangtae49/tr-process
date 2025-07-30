@@ -26,10 +26,6 @@
     cursor: pointer;
 }
 
-.table-pane .table .row:hover {
-    background-color: #bfd2e3;
-}
-
 .table-pane .header {overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
 .table-pane .header .ppid {flex: 0 0 50px;}
 .table-pane .header .pid {flex: 0 0 40px;}
@@ -38,7 +34,8 @@
 .table-pane .header .port {flex: 0 0 50px;}
 .table-pane .header .memory {flex: 0 0 80px;}
 
-.table-pane .table .row .col {padding-left:5px; }
+.table-pane .table .row .col {padding-left:5px; cursor: pointer;}
+.table-pane .table .row .col:hover {background-color: #bfd2e3;}
 .table-pane .table .row .ppid {flex: 0 0 40px; text-align: right;}
 .table-pane .table .row .pid {flex: 0 0 40px; text-align: right;}
 .table-pane .table .row .name {flex: 1; text-align: left; }

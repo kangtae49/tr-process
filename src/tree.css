@@ -38,10 +38,6 @@
     cursor: pointer;
 }
 
-.tree-pane .tree .row-tree:hover {
-    background-color: #bfd2e3;
-}
-
 .tree-pane .header {overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
 .tree-pane .header .ppid {width: 40px;}
 .tree-pane .header .pid {width: 40px;}
@@ -50,7 +46,8 @@
 .tree-pane .header .port {flex: 0 0 50px;}
 .tree-pane .header .memory {flex: 0 0 80px;}
 
-/*.tree-pane .tree .row .col {padding-left:5px; }*/
+.tree-pane .tree .row .col { cursor: pointer; }
+.tree-pane .tree .row .col:hover { background-color: #bfd2e3; }
 .tree-pane .tree .row .ppid {flex: 0 0 40px; text-align: right;}
 .tree-pane .tree .row .pid {flex: 0 0 40px; text-align: right;}
 .tree-pane .tree .row .name {flex: 1; padding-left: 5px; text-align: left; }
