@@ -24,9 +24,10 @@ function ProcessTableListView() {
     if (selectedItem == undefined || !listRef.current) return;
     const idx = table?.findIndex((item) => item.id == selectedItem.id);
     console.log('tree selected', idx);
-    if (idx) {
-      listRef.current.scrollToItem(idx, "center");
+    if (idx == undefined) {
+      return
     }
+    listRef.current.scrollToItem(idx, "center");
   }, [selectedItem]);
 
   if (table === undefined) return null;

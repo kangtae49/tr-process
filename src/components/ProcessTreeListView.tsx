@@ -34,9 +34,10 @@ function ProcessTreeListView() {
 
     const idx = getIndexFromItem(tree, selectedItem);
     console.log('tree selected', idx, tree);
-    if (idx) {
-      listRef.current.scrollToItem(idx, "center");
+    if (idx == undefined) {
+      return;
     }
+    listRef.current.scrollToItem(idx, "center");
   }, [selectedItem, tree, elements]);
 
   useEffect(() => {
