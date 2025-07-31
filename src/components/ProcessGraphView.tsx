@@ -22,6 +22,12 @@ import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import {useCyStore} from "@/stores/cyStore.ts";
 import {useTreeStore} from "@/stores/treeStore.ts";
 import {getTree} from "@/components/ProcessTreeListView.tsx";
+import {
+  breadthFirstLayoutOptions,
+  concentricLayoutOptions, coseLayoutOptions,
+  graphStylesheet,
+  gridLayoutOptions
+} from "@/components/graph.ts";
 
 export type Item = {
   id: string
@@ -131,15 +137,25 @@ function ProcessGraphView() {
     const node = event.target;
     setSelectedItem(node.data());
   }, [])
-  const handleNodeUnSelect = useCallback((_event: EventObject) => {
-    console.log('handleNodeUnSelect')
+  const handleNodeUnSelect = useCallback((event: EventObject) => {
+    console.log('handleNodeUnSelect', event);
+    const node = event.target;
     setSelectedItem(undefined);
+    // setSelectedItem(undefined);
+    // cyInstance?.nodes().unselect();
+    // cyInstance?.edges().unselect();
+    // setSelectedItem(event.target.data());
   }, [])
 
-  const handleEdgeSelect = useCallback((_event: EventObject) => {
-    console.log('handleEdgeSelect')
-  }, [])
+  const handleEdgeSelect = useCallback((event: EventObject) => {
+    console.log('handleEdgeSelect', event)
 
+  }, [])
+  const handleEdgeUnSelect = useCallback((event: EventObject) => {
+    console.log('handleEdgeUnSelect', event)
+    setSelectedItem(undefined);
+    // event.target.edges().select();
+  }, [])
   useEffect(() => {
     if (!cyInstance) return;
     const cy = cyInstance;
@@ -148,25 +164,32 @@ function ProcessGraphView() {
     cy.on('select', 'node', handleNodeSelect);
     cy.on('unselect', 'node', handleNodeUnSelect);
     cy.on('select', 'edge', handleEdgeSelect);
+    cy.on('unselect', 'edge', handleEdgeUnSelect);
 
     return () => {
       cy.off('select', 'node', handleNodeSelect);
+      cy.off('unselect', 'node', handleNodeUnSelect);
       cy.off('select', 'edge', handleEdgeSelect);
+      cy.off('unselect', 'edge', handleEdgeUnSelect);
     };
   }, [cyInstance]);
 
   useEffect(() => {
     if (!cyInstance) return;
-    if (!selectedItem) return;
+    cyInstance.edges(':selected').unselect();
+    cyInstance.nodes(':selected').unselect();
+    if (selectedItem == undefined) {
+      return;
+    }
 
     const cy = cyInstance;
-    const selectedNode = cy.$(':selected');
 
     const target = cy.$(`#${selectedItem.id}`);
+    target.select();
+    const selectedNode = cy.$(':selected');
     console.log('animation before', target);
     if (target.length > 0) {
-      cy.nodes().unselect();
-      target.select();
+      // cy.nodes().unselect();
 
 
       if (selectedNode.nonempty()) {
@@ -181,10 +204,9 @@ function ProcessGraphView() {
           easing: 'ease-in-out' // 'linear', 'ease-in', 'ease-out', 등
         });
       }
-      cy.edges(':selected').unselect();
+      // cy.edges(':selected').unselect();
       let current: CollectionReturnValue | NodeSingular = selectedNode;
       while (true) {
-        console.log('hello');
         const incomingEdge = current.incomers('edge');
         if (incomingEdge.empty()) break;
         incomingEdge.select();
@@ -274,84 +296,8 @@ function ProcessGraphView() {
     console.log('setElements')
     setElements(nodes_and_edges);
 
-
-
-
-
   }, [processes, sockets]);
 
-
-
-  const coseLayout: cytoscape.CoseLayoutOptions = {
-    name: "cose",
-    // refresh?: number
-    // randomize?: boolean
-    componentSpacing: 10,
-    // nodeRepulsion?(node: any): number
-    // nodeOverlap: 200,
-    // idealEdgeLength?(edge: any): number
-    // edgeElasticity?(edge: any): number
-    edgeElasticity: 100,
-    nestingFactor: 1,
-    fit: true,
-    animate: true,
-    padding: 50,
-    nodeOverlap: 150,
-    idealEdgeLength: 100,
-    gravity: 0.05,
-    numIter: 1000,
-  }
-
-  const style: React.CSSProperties = {
-    width: "100%",
-    height: "100vh"
-  }
-
-  const stylesheet: cytoscape.StylesheetStyle[] = [
-    {
-      selector: 'node',
-      style: {
-        label: 'data(info)',
-        'text-valign': 'center',
-        'text-halign': 'center',
-        'background-color': 'data(color)',
-        color: '#000',
-        width: 150,
-        height: 150,
-        'text-wrap': 'wrap',
-        'font-size': 20,
-      }
-    },
-    {
-      selector: 'node:selected',
-      style: {
-        'background-color': '#a63131',
-        'border-color': '#af0707',
-        'border-width': 10,
-      }
-    },
-    {
-      selector: 'edge',
-      style: {
-        width: 6,
-        'curve-style': 'bezier',
-        'line-color': '#c6b6b6',
-        'target-arrow-color': '#e83d3d',
-        'target-arrow-shape': 'triangle',
-        'arrow-scale': 1.5
-      }
-    },
-    {
-      selector: 'edge:selected',
-      style: {
-        'line-color': '#a63131',
-        'target-arrow-color': '#af0707',
-        'width': 10,
-        'arrow-scale': 2
-      }
-    },
-
-  ];
 
 
   if (!elements) {
@@ -394,14 +340,13 @@ function ProcessGraphView() {
           // @ts-ignore
         <CytoscapeComponent
           className="graph"
-          layout={coseLayout}
+          layout={coseLayoutOptions}
           elements={elements}
           style={{
-            ...style,
             width,
             height
           }}
-          stylesheet={stylesheet}
+          stylesheet={graphStylesheet}
           cy={setCyInstance}
         />
         )}
