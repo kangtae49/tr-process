@@ -1,12 +1,12 @@
 import { create } from "zustand"
-import {Item} from "@/components/ProcessGraphView.tsx";
+import {ProcessTreeNode} from "@/bindings.ts";
 
 export interface TreeStore {
-  tree: Item[] | undefined,
-  setTree: (table?: Item[]) => void
+  tree: ProcessTreeNode[] | undefined,
+  setTree: (table?: ProcessTreeNode[]) => void
 }
 
 export const useTreeStore = create<TreeStore>((set) => ({
   tree: undefined,
-  setTree: (tree?: Item[]) => set(() => ({ tree }))
+  setTree: (tree?: ProcessTreeNode[]) => set(() => ({ tree }))
 }))

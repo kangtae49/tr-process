@@ -1,11 +1,11 @@
 import { create } from "zustand"
 
 export interface SelectedPidStore {
-  selectedPid: string | undefined,
-  setSelectedPid: (selectedPid?: string) => void
+  selectedPid: number | undefined | null,
+  setSelectedPid: (selectedPid: number | undefined) => void
 }
 
 export const useSelectedPidStore = create<SelectedPidStore>((set) => ({
   selectedPid: undefined,
-  setSelectedPid: (selectedPid?: string) => set(() => ({ selectedPid }))
+  setSelectedPid: (selectedPid: number | undefined) => set(() => ({ selectedPid }))
 }))

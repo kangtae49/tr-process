@@ -1,80 +1,85 @@
-import { FixedSizeList as List } from 'react-window';
+import {FixedSizeList as List} from 'react-window';
 import AutoSizer from "react-virtualized-auto-sizer";
-import {useEffect, useRef} from "react";
-import {Item} from "@/components/ProcessGraphView.tsx";
+import {useEffect, useRef, useState} from "react";
 import {get_mem} from "@/components/utils.ts";
-import {useSelectedItemStore} from "@/stores/selectedItemStore.ts";
-import cytoscape from "cytoscape";
+import {CollectionReturnValue, EdgeSingular, NodeCollection, NodeSingular} from "cytoscape";
 import {useTreeStore} from "@/stores/treeStore.ts";
 import {useElementsStore} from "@/stores/elementsStore.ts";
+import {useCyStore} from "@/stores/cyStore.ts";
+import {useSelectedPidStore} from "@/stores/selectedPidStore.ts";
 
 const ITEM_SIZE = 18;
 
 function ProcessTreeListView() {
-  const selectedItem = useSelectedItemStore((state) => state.selectedItem);
-  const setSelectedItem = useSelectedItemStore((state) => state.setSelectedItem);
   const tree = useTreeStore((state) => state.tree);
   const elements = useElementsStore((state) => state.elements);
-  const setTree = useTreeStore((state) => state.setTree);
+  const cyInstance = useCyStore((state) => state.cyInstance);
   const listRef = useRef<List>(null);
-
-  const clickItem = (item: Item | undefined) => {
+  const setSelectedPid = useSelectedPidStore((state) => state.setSelectedPid);
+  const selectedPid = useSelectedPidStore((state) => state.selectedPid);
+  const [rootNodes, setRootNodes] = useState<NodeCollection | undefined>(undefined);
+  const [selectedItem, setSelectedItem] = useState<NodeSingular | undefined>(undefined);
+  const clickItem = (item: NodeSingular | undefined) => {
     console.log(item);
-    setSelectedItem(item);
+    setSelectedPid(item?.data('pid'));
   }
 
   useEffect(() => {
     console.log('tree selected');
-    if (selectedItem == undefined || !tree || !listRef.current) return;
+    if (selectedPid == undefined || !cyInstance || !listRef.current) return;
+    const processInfo = cyInstance.getElementById(`${selectedPid}`) as NodeSingular;
+    setSelectedItem(processInfo);
 
-    const idx = getIndexFromItem(tree, selectedItem);
+    const rootNodes: NodeCollection = cyInstance.nodes().filter((node) => node.incomers('edge').empty());
+
+    const idx = getIndexFromItem(rootNodes, cyInstance.getElementById(`${selectedPid}`));
     console.log('tree selected', idx, tree);
     if (idx == undefined) {
       return;
     }
     listRef.current.scrollToItem(idx, "center");
-  }, [selectedItem, tree]);
+  }, [selectedPid]);
 
   useEffect(() => {
-    if(elements === undefined) return;
-    const t = getTree(elements);
-    if (t != undefined) {
-      setTree(t);
-      console.log('tree !!!', t);
-    }
-  }, [elements]);
+    if (!cyInstance) return;
+    const rootNodes: NodeCollection = cyInstance.nodes().filter((node) => node.incomers('edge').empty());
+
+    setRootNodes(rootNodes);
+    console.log('rootNodes', rootNodes);
+
+  }, [cyInstance]);
 
 
   console.log('render tree');
-  return tree && (
+  return (cyInstance && rootNodes) && (
     <div className="tree">
       <AutoSizer>
         {({ height, width }) => (
           <List
             className="tree-list"
             height={height}
-            itemCount={getCountOfTreeItems(tree)}
+            itemCount={cyInstance.nodes().length}
             itemSize={ITEM_SIZE}
             width={width}
             ref={listRef}
           >
             {({ index, style }) => {
-              const [item, _idx, depth] = getItemFromIndex(tree, index);
+              const [item, _idx, depth] = getItemFromIndex(rootNodes, index);
               const dep = Array.from({ length: depth }, (_, i) => i);
               return item ? (
-              <div className="row-tree" key={index} style={{...style, backgroundColor: `${selectedItem?.id == item.id ? '#bfd2e3': null}`}} >
+              <div className="row-tree" key={index} style={{...style, backgroundColor: `${selectedItem?.data('pid') == String(item.data('pid')) ? '#bfd2e3': null}`}} >
                 {dep.map((depIdx)=> {
                   return (
                   <div className="depth" key={depIdx} onClick={() => clickItem(getParentItem(item, (depth - depIdx)))}>
-                    {getParentItem(item, (depth - depIdx))?.process.pid}
+                    {getParentItem(item, (depth - depIdx))?.data('pid')}
                   </div>
                 )})}
                 <div className="row">
-                  <div className="col pid" onClick={() => clickItem(item)}>{item.id}</div>
-                  <div className="col name" title={getTitle(item)} onClick={() => clickItem(item)}>{item.process.name || ''}</div>
-                  <div className="col addr" onClick={() => clickItem(item)}>{item.socket?.local_addr || ''}</div>
-                  <div className="col port" onClick={() => clickItem(item)}>{item.socket?.local_port || ''}</div>
-                  <div className="col memory" onClick={() => clickItem(item)}>{get_mem(item.process.memory) || ''}</div>
+                  <div className="col pid" onClick={() => clickItem(item)}>{item.data('pid')}</div>
+                  <div className="col name" title={getTitle(item)} onClick={() => clickItem(item)}>{item.data('name') || ''}</div>
+                  <div className="col addr" onClick={() => clickItem(item)}>{item.data('local_addr') || ''}</div>
+                  <div className="col port" onClick={() => clickItem(item)}>{item.data('local_port') || ''}</div>
+                  <div className="col memory" onClick={() => clickItem(item)}>{get_mem(item.data('memory')) || ''}</div>
                 </div>
               </div>
               ) : null
@@ -89,90 +94,35 @@ function ProcessTreeListView() {
 export default ProcessTreeListView;
 
 
-export function getTree(elements: cytoscape.ElementDefinition[] | undefined): Item [] | undefined {
-  console.log('getTree');
-  if (!elements) return undefined;
-  let itemList = elements
-      .map((elem) => elem.data)
-      .filter((data) => (data.type === 'node'))
-      .map((data)=> data as Item)
-  ;
-  const rootList = itemList
-      .filter((data) => (!data.process?.parent))
-      .map((data)=> data)
 
-  const pids = rootList.map((data) => data.process.pid);
-  itemList = itemList.filter((data) => !pids.includes(data.process.pid));
-  appendChildren(rootList, itemList);
-  return rootList;
-}
-
-function appendChildren(rootList: Item [], itemList: Item []) {
-  for (const root of rootList) {
-    const children = getChildren(itemList, root);
-    children.forEach((c) => {
-      c.parent = root
-    })
-    root.children = children;
-    const pids = children.map((data) => data.process.pid);
-    itemList = itemList.filter((data) => !pids.includes(data.process.pid));
-    appendChildren(children, itemList);
-  }
-}
-
-function getChildren(itemList: Item [], item: Item): Item [] {
-  return itemList.filter((data) => data.process?.parent == item.process.pid)
-}
-
-
-
-function getItemFromIndex(rootList: Item [], nth: number): [Item | undefined, number, number] {
-  const [item, index, depth] = getItemFromNth(rootList, nth, -1, 0);
+function getItemFromIndex(rootNodes: NodeCollection, nth: number): [NodeSingular | undefined, number, number] {
+  const [item, index, depth] = getItemFromNth(rootNodes, nth, -1, 0);
   return [item, index, depth];
 }
-// function getCountOfTreeItems(elements: cytoscape.ElementDefinition[]): number {
-//   let itemList = elements
-//     .map((elem) => elem.data)
-//     .filter((data) => (data.type === 'node'))
-//     .map((data)=> data as Item)
-//   ;
-//   return itemList.length;
-// }
 
-export function getCountOfTreeItems(treeItems: Item [] | undefined): number {
-  if (!treeItems) {
-    return 0
-  }
-  let count = treeItems.length
-  for (let idxItem = 0; idxItem < treeItems.length; idxItem++) {
-    const treeItem = treeItems[idxItem]
-    if (!treeItem.children?.length) {
-      continue
-    }
-    count += getCountOfTreeItems(treeItem.children)
-  }
-  return count
-}
 
-function getIndexFromItem(rootList: Item [] | undefined, item: Item): number | undefined {
+function getIndexFromItem(rootList: NodeCollection | undefined, item: NodeSingular): number | undefined {
   const [findIndex] = getNthFromItem(rootList, item, -1, 0);
   return findIndex;
 }
 
 
-function getItemFromNth(treeItems: Item [] | undefined, nth: number, curIdx = -1, curDepth = 0): [treeItem: Item | undefined, number, number] {
-  let findTreeItem: Item | undefined = undefined
-  if (!treeItems) {
+function getItemFromNth(rootNodes: NodeCollection | NodeSingular [] | undefined, nth: number, curIdx = -1, curDepth = 0): [treeItem: NodeSingular | undefined, number, number] {
+  let findTreeItem: NodeSingular | undefined = undefined
+  if (!rootNodes) {
     return [findTreeItem, curIdx, curDepth]
   }
-  for (let idxItem = 0; idxItem < treeItems.length; idxItem++) {
+  for (let idxItem = 0; idxItem < rootNodes.length; idxItem++) {
     curIdx++
     if (curIdx == nth) {
-      findTreeItem = treeItems[idxItem]
+      findTreeItem = rootNodes[idxItem]
       break
     }
+    const children: NodeSingular[] = rootNodes[idxItem].outgoers('edge').map((edge: EdgeSingular) => {
+      return edge.target() as NodeSingular
+    });
 
-    const [findItem, nextIdx, findDepth] = getItemFromNth(treeItems[idxItem]?.children, nth, curIdx, curDepth + 1)
+    const [findItem, nextIdx, findDepth] = getItemFromNth(children, nth, curIdx, curDepth + 1)
     findTreeItem = findItem
     curIdx = nextIdx
     if (findTreeItem) {
@@ -181,22 +131,25 @@ function getItemFromNth(treeItems: Item [] | undefined, nth: number, curIdx = -1
     }
   }
   return [findTreeItem, curIdx, curDepth]
-
 }
 
-function getNthFromItem(treeItems: Item [] | undefined, item: Item, curIdx = -1, curDepth = 0): [number | undefined, number, number] {
+function getNthFromItem(treeItems: CollectionReturnValue| NodeCollection | NodeSingular[] |undefined, item: NodeSingular, curIdx = -1, curDepth = 0): [number | undefined, number, number] {
   let findIndex: number | undefined = undefined
   if (!treeItems) {
     return [findIndex, curIdx, curDepth]
   }
   for (let idxItem = 0; idxItem < treeItems.length; idxItem++) {
     curIdx++
-    if (treeItems[idxItem].id == item.id) {
+    if (treeItems[idxItem].data('pid') == item.data('pid')) {
       findIndex = curIdx
       break
     }
 
-    const [findNth, nextIdx, findDepth] = getNthFromItem(treeItems[idxItem]?.children, item, curIdx, curDepth + 1)
+    const children: NodeSingular[] = treeItems[idxItem].outgoers('edge').map((edge: EdgeSingular) => {
+      return edge.target() as NodeSingular
+    });
+
+    const [findNth, nextIdx, findDepth] = getNthFromItem(children, item, curIdx, curDepth + 1)
     findIndex = findNth
     curIdx = nextIdx
     if (findIndex) {
@@ -205,24 +158,23 @@ function getNthFromItem(treeItems: Item [] | undefined, item: Item, curIdx = -1,
     }
   }
   return [findIndex, curIdx, curDepth]
-
-
 }
 
 
-
-function getParentItem(item: Item, nth: number): Item | undefined {
-  let curItem: Item | undefined = item;
+function getParentItem(item: NodeSingular, nth: number): NodeSingular | undefined {
+  let curItem: NodeSingular | undefined = item;
   for(let i=0; i < nth; i++) {
-    curItem = curItem?.parent;
-    if (!parent) {
+    let edge = curItem.incomers('edge').first() as EdgeSingular;
+    if (edge.nonempty() && edge.isEdge()) {
+      curItem = edge.source();
+    } else {
       break;
     }
   }
   return curItem;
 }
 
-function getTitle(item: Item): string {
-  return item.process.exe || item.process.name || item.id;
+function getTitle(node: NodeSingular): string {
+  return node.data('exe') || node.data('name') || String(node.data('pid'));
 }
 

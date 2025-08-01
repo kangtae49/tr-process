@@ -1,8 +1,7 @@
 import ProcessTreeListView from "@/components/ProcessTreeListView.tsx";
 import {useTreeStore} from "@/stores/treeStore.ts";
 function ProcessTreeView() {
-  const tree = useTreeStore((state) => state.tree);
-  return tree && (
+  return (
     <div className="tree-pane">
       <ProcessTreeListView />
     </div>

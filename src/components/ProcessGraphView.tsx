@@ -1,13 +1,10 @@
-import React, {useCallback, useEffect} from 'react';
-import {commands, HttpNotify, ProcessInfo, SockInfo} from "@/bindings.ts";
-import {useSocketsStore} from "@/stores/socketsStore.ts";
-import {useProcessesStore} from "@/stores/processesStore.ts";
-import cytoscape, {CollectionReturnValue, EventObject, NodeCollection, NodeSingular} from 'cytoscape';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {commands, HttpNotify, ProcessInfo} from "@/bindings.ts";
+import cytoscape, {CollectionReturnValue, EventObject, NodeSingular} from 'cytoscape';
 import CytoscapeComponent from 'react-cytoscapejs';
 import {useElementsStore} from "@/stores/elementsStore.ts";
 import {get_mem} from "@/components/utils.ts";
 import AutoSizer from 'react-virtualized-auto-sizer'
-import {useSelectedItemStore} from "@/stores/selectedItemStore.ts";
 import { FontAwesomeIcon as Icon } from '@fortawesome/react-fontawesome'
 import {
   faFolder,
@@ -20,41 +17,23 @@ import {
 import { emit } from '@tauri-apps/api/event';
 import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import {useCyStore} from "@/stores/cyStore.ts";
-import {useTreeStore} from "@/stores/treeStore.ts";
-import {getTree} from "@/components/ProcessTreeListView.tsx";
 import {
-  breadthFirstLayoutOptions,
-  concentricLayoutOptions, coseLayoutOptions,
+  coseLayoutOptions,
   graphStylesheet,
-  gridLayoutOptions
 } from "@/components/graph.ts";
+import { useSelectedPidStore } from '@/stores/selectedPidStore';
 
-export type Item = {
-  id: string
-  type: string
-  label: string
-  color: string
-  process: ProcessInfo
-  socket?: SockInfo
-  info: string
-  children?: Item[]
-  parent?: Item
-}
 
 
 function ProcessGraphView() {
-  const sockets = useSocketsStore((state) => state.sockets);
-  const setSockets = useSocketsStore((state) => state.setSockets);
-  const processes = useProcessesStore((state) => state.processes);
-  const setProcesses = useProcessesStore((state) => state.setProcesses);
   const elements = useElementsStore((state) => state.elements);
   const setElements = useElementsStore((state) => state.setElements);
-  const selectedItem = useSelectedItemStore((state) => state.selectedItem);
-  const setSelectedItem = useSelectedItemStore((state) => state.setSelectedItem);
+  const selectedPid = useSelectedPidStore((state) => state.selectedPid);
+  const setSelectedPid = useSelectedPidStore((state) => state.setSelectedPid);
   const cyInstance = useCyStore((state) => state.cyInstance);
   const setCyInstance = useCyStore((state) => state.setCyInstance);
-
-
+  const [selectedItem, setSelectedItem] = useState<ProcessInfo | undefined>(undefined);
+  const cyRef = useRef<cytoscape.Core | null>(null);
 
   const shellShowItemInFolder = async (path: string | undefined | null) => {
     if (!path) return
@@ -71,7 +50,7 @@ function ProcessGraphView() {
   const clickZoomIn = () => {
     const cy = cyInstance;
     if (!cy) return;
-    if (selectedItem) {
+    if (selectedPid) {
       cy.animate({
         zoom: cy.zoom() * 1.3,
         center: { eles: cy.elements(':selected') },
@@ -87,7 +66,7 @@ function ProcessGraphView() {
   const clickZoomOut = () => {
     const cy = cyInstance;
     if (!cy) return;
-    if (selectedItem) {
+    if (selectedPid) {
       cy.animate({
         zoom: cy.zoom() / 1.3,
         center: { eles: cy.elements(':selected') },
@@ -102,7 +81,7 @@ function ProcessGraphView() {
     const cy = cyInstance;
     if (!cy) return;
 
-    if (selectedItem) {
+    if (selectedPid) {
       cy.animate({
         fit: {
           // eles: cy.$(':selected'),
@@ -119,7 +98,7 @@ function ProcessGraphView() {
   const clickZoomMax = () => {
     const cy = cyInstance;
     if (!cy) return;
-    if (selectedItem) {
+    if (selectedPid) {
       cy.animate({
         fit: {
           eles: cy.elements(),
@@ -135,16 +114,11 @@ function ProcessGraphView() {
   const handleNodeSelect = useCallback((event: EventObject) => {
     console.log('handleNodeSelect')
     const node = event.target;
-    setSelectedItem(node.data());
+    setSelectedPid(node.data('pid'));
   }, [])
   const handleNodeUnSelect = useCallback((event: EventObject) => {
     console.log('handleNodeUnSelect', event);
-    const node = event.target;
-    setSelectedItem(undefined);
-    // setSelectedItem(undefined);
-    // cyInstance?.nodes().unselect();
-    // cyInstance?.edges().unselect();
-    // setSelectedItem(event.target.data());
+    setSelectedPid(undefined);
   }, [])
 
   const handleEdgeSelect = useCallback((event: EventObject) => {
@@ -153,8 +127,7 @@ function ProcessGraphView() {
   }, [])
   const handleEdgeUnSelect = useCallback((event: EventObject) => {
     console.log('handleEdgeUnSelect', event)
-    setSelectedItem(undefined);
-    // event.target.edges().select();
+    setSelectedPid(undefined);
   }, [])
   useEffect(() => {
     if (!cyInstance) return;
@@ -178,13 +151,15 @@ function ProcessGraphView() {
     if (!cyInstance) return;
     cyInstance.edges(':selected').unselect();
     cyInstance.nodes(':selected').unselect();
-    if (selectedItem == undefined) {
+    if (selectedPid == undefined) {
       return;
     }
 
     const cy = cyInstance;
+    const processInfo = cy.getElementById(`${selectedPid}`).data() as ProcessInfo;
+    setSelectedItem(processInfo);
 
-    const target = cy.$(`#${selectedItem.id}`);
+    const target = cy.$(`#${selectedPid}`);
     target.select();
     const selectedNode = cy.$(':selected');
     console.log('animation before', target);
@@ -216,95 +191,31 @@ function ProcessGraphView() {
         current = parentNodes.first();
       }
     }
-  }, [selectedItem]);
+  }, [selectedPid]);
+
+  const reCyRef = (cy: cytoscape.Core) => {
+    console.log('reCyRef', cy);
+    cyRef.current = cy;
+    cyRef.current.on('layoutstop', onLayoutStop);
+  }
+
+  const onLayoutStop = () => {
+    console.log('layout finished');
+    setCyInstance(cyRef.current);
+  };
 
   useEffect(() => {
-    commands.getProcesses().then((res) => {
-      if (res.status == 'ok') {
-        const processes = res.data;
-        setProcesses(processes);
-      }
-    });
+    makeElements().then((elements) => {
+      setElements(elements);
+    })
   }, []);
-
-  useEffect(() => {
-    commands.getSockets().then((res) => {
-      if (res.status == 'ok') {
-        const sockets = res.data;
-        console.log('sockets', sockets);
-        setSockets(sockets);
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    if (processes === undefined || sockets === undefined) return;
-    const pidNodes: cytoscape.ElementDefinition[] = processes.map((process) => {
-      const find_socket = sockets.find((sock) => sock.pids.includes(process.pid));
-      const color = find_socket ? '#f4a261' : '#1f77b4';
-      return {
-        data: {
-          id: `${process.pid}`,
-          type: 'node',
-          label: `${process.pid}`,
-          color: color,
-          process: process,
-          socket: find_socket,
-          info: get_info(process, find_socket),
-        },
-      }
-    });
-
-    const ppidNodes: cytoscape.ElementDefinition[] = processes
-      .filter((p) => p.parent !== undefined)
-      .filter((p) => !processes.some((pp)=> pp.pid == p.parent))
-      .map((process) => {
-        return {
-          data: {
-            id: `${process.parent}`,
-            type: 'node',
-            label: `${process.parent}`,
-            color: '#aeaaaa',
-            process: {
-              pid: process.parent,
-            },
-            socket: undefined,
-            info: `pid: ${process.parent}`,
-          }
-        }
-      });
-
-    const initialNodes: cytoscape.ElementDefinition[] = [...unique(pidNodes), ...unique(ppidNodes)]; //.sort((a, b) => Number(a.data.source) - Number(b.data.source));
-
-    const pidEdges: cytoscape.ElementDefinition[] = processes
-      .filter((process) => (process.parent !== null && process.parent !== undefined ))
-      // .filter((process) => processes.some((p)=> p.pid === process.parent))
-      .map((process) => {
-      return {
-        data: {
-          id: `${process.parent}-${process.pid}`,
-          type: 'edge',
-          source: `${process.parent}`,
-          target: `${process.pid}`,
-          label: `${process.parent}-${process.pid}`,
-        },
-        selectable: true
-      }
-    });
-    const initialEdges: cytoscape.ElementDefinition[] = [...unique(pidEdges)]; //.sort((a, b) => Number(a.data.source) - Number(b.data.source));
-    const nodes_and_edges = [...initialNodes, ...initialEdges];
-    console.log('setElements')
-    setElements(nodes_and_edges);
-
-  }, [processes, sockets]);
-
 
 
   if (!elements) {
     return <div>Loading...</div>;
   }
 
-  return (
+  return elements && (
     <div className="graph-pane">
       <div className="header">
         <div className="refresh">
@@ -316,7 +227,7 @@ function ProcessGraphView() {
         <div className="zoom-in">
           <Icon icon={faMagnifyingGlassPlus} onClick={() => clickZoomIn()} />
         </div>
-        {selectedItem && (
+        {selectedPid && (
           <>
             <div className="zoom-max">
               <Icon icon={faMaximize} onClick={() => clickZoomMax()} />
@@ -327,11 +238,11 @@ function ProcessGraphView() {
           </>
         )}
 
-        {selectedItem && selectedItem.process?.exe && (
-          <div className="folder" onClick={() => shellShowItemInFolder(selectedItem.process?.exe)}><Icon icon={faFolder} /></div>
+        {selectedItem && selectedItem.exe && (
+          <div className="folder" onClick={() => shellShowItemInFolder(selectedItem.exe)}><Icon icon={faFolder} /></div>
         )}
         {selectedItem && (
-          <div className="label">[{selectedItem.id}] {selectedItem.process?.exe || selectedItem.process?.name || ''}</div>
+          <div className="label">[{selectedItem.pid}] {selectedItem.exe || selectedItem.name || ''}</div>
         )}
 
       </div>
@@ -347,7 +258,7 @@ function ProcessGraphView() {
             height
           }}
           stylesheet={graphStylesheet}
-          cy={setCyInstance}
+          cy={reCyRef}
         />
         )}
       </AutoSizer>
@@ -357,22 +268,57 @@ function ProcessGraphView() {
 
 export default ProcessGraphView;
 
-function get_info(process: ProcessInfo | undefined, socket: SockInfo | undefined) {
+function get_info(process: ProcessInfo | undefined) {
   const ret = [
     `${process?.name}`,
     `pid: ${process?.pid}`,
-    `ppid: ${process?.parent}`,
+    `ppid: ${process?.ppid}`,
     `mem: ${get_mem(process?.memory)}`,
-    `local: ${socket?.local_addr}:${socket?.local_port}`,
-    `remote: ${socket?.remote_addr}:${socket?.remote_port}`,
+    `local: ${process?.local_addr}:${process?.local_port}`,
+    `remote: ${process?.remote_addr}:${process?.remote_port}`,
     // `total_read_bytes: ${process.disk_usage.total_read_bytes}`,
     // `total_write_bytes: ${process.disk_usage.total_write_bytes}`,
   ].filter((x) => !x.endsWith('undefined'));
   return ret.join('\n')
 }
 
-function unique(arr: any[]) {
-  return Array.from(
-    new Set(arr.map(o => JSON.stringify(o)))
-  ).map(str => JSON.parse(str));
+
+export async function makeElements() {
+  return commands.getProcess().then((res) => {
+    if (res.status == 'ok') {
+      const processes = res.data;
+
+
+      const pidNodes: cytoscape.ElementDefinition[] = processes.map(( process) => {
+        const color = process.local_addr ? '#f4a261' : '#1f77b4';
+        return {
+          data: {
+            id: `${process.pid}`,
+            type: 'node',
+            label: `${process.pid}`,
+            color: color,
+            info: get_info(process),
+            ...process,
+          },
+        }
+      });
+
+      const pidEdges: cytoscape.ElementDefinition[] = processes
+        .filter((process) => (process.ppid !== null && process.ppid !== undefined ))
+        // .filter((process) => processes.some((p)=> p.pid === process.parent))
+        .map((process) => {
+          return {
+            data: {
+              id: `${process.ppid}-${process.pid}`,
+              type: 'edge',
+              source: `${process.ppid}`,
+              target: `${process.pid}`,
+              label: `${process.ppid}-${process.pid}`,
+            },
+            selectable: true
+          }
+        });
+      return [...pidNodes, ...pidEdges];
+    }
+  });
 }

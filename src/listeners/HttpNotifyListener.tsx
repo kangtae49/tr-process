@@ -1,43 +1,23 @@
 import {useEffect} from "react";
 import {listen} from "@tauri-apps/api/event";
-import {commands, HttpNotify} from "@/bindings";
-import {useProcessesStore} from "@/stores/processesStore.ts";
-import {useSocketsStore} from "@/stores/socketsStore.ts";
+import {HttpNotify} from "@/bindings";
 import {useElementsStore} from "@/stores/elementsStore.ts";
-// import {useTreeStore} from "@/stores/treeStore.ts";
-import {useSelectedItemStore} from "@/stores/selectedItemStore.ts";
+import {makeElements} from "@/components/ProcessGraphView.tsx";
+import {useSelectedPidStore} from "@/stores/selectedPidStore.ts";
 
 function HttpNotifyListener() {
-  const setProcesses = useProcessesStore((state) => state.setProcesses);
-  const setSockets = useSocketsStore((state) => state.setSockets);
   const setElements = useElementsStore((state) => state.setElements);
-  const setSelectedItem = useSelectedItemStore((state) => state.setSelectedItem);
+  const setSelectedPid = useSelectedPidStore((state) => state.setSelectedPid);
 
   useEffect(() => {
     const unlisten = listen<HttpNotify>('http', (event) => {
       let taskNotify = event.payload;
       if (taskNotify.cmd === "Refresh") {
-        // setTree(undefined);
-        setSelectedItem(undefined);
+        setSelectedPid(undefined);
         setElements(undefined);
-        // setProcesses(undefined);
-        // setSockets(undefined);
-
-        commands.getProcesses().then((res) => {
-          if (res.status == 'ok') {
-            const processes = res.data;
-            setProcesses(processes);
-            console.log(taskNotify);
-          }
-        });
-
-        commands.getSockets().then((res) => {
-          if (res.status == 'ok') {
-            const sockets = res.data;
-            console.log('sockets', sockets);
-            setSockets(sockets);
-          }
-        });
+        makeElements().then((elements) => {
+          setElements(elements);
+        })
       }
     });
     return () => {

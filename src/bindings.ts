@@ -13,17 +13,9 @@ async getResourcePath() : Promise<Result<string, ApiError>> {
     else return { status: "error", error: e  as any };
 }
 },
-async getSockets() : Promise<Result<SockInfo[], ApiError>> {
+async getProcess() : Promise<Result<ProcessInfo[], ApiError>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("get_sockets") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async getProcesses() : Promise<Result<ProcessInfo[], ApiError>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("get_processes") };
+    return { status: "ok", data: await TAURI_INVOKE("get_process") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -51,9 +43,8 @@ async runHttpServer(servInfo: ServInfo) : Promise<Result<ServInfo, ApiError>> {
 
 export type ApiError = { Error: string } | { JsonError: string } | { TokioError: string } | { IoError: string } | { NetstatError: string }
 export type DiskInfo = { read_bytes: number; write_bytes: number; total_read_bytes: number; total_write_bytes: number }
-export type ProcessInfo = { pid: number; name?: string | null; exe?: string | null; cpu_usage?: number | null; memory?: number | null; disk_usage?: DiskInfo | null; accumulated_cpu_time?: number | null; parent?: number | null }
+export type ProcessInfo = { pid: number; ppid?: number | null; name?: string | null; exe?: string | null; cpu_usage?: number | null; memory?: number | null; disk_usage?: DiskInfo | null; accumulated_cpu_time?: number | null; local_addr?: string | null; local_port?: number | null; protocol?: SockProtocol | null; remote_addr?: string | null; remote_port?: number | null; state?: SockState | null }
 export type ServInfo = { name: string; ip: string; port: number; path: string }
-export type SockInfo = { local_addr: string; local_port: number; protocol: SockProtocol; pids: number[]; remote_addr?: string | null; remote_port?: number | null; state?: SockState | null }
 export type SockProtocol = "Tcp" | "Udp"
 export type SockState = "Closed" | "Listen" | "SynSent" | "SynReceived" | "Established" | "FinWait1" | "FinWait2" | "CloseWait" | "Closing" | "LastAck" | "TimeWait" | "DeleteTcb" | "Unknown"
 

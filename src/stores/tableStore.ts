@@ -1,12 +1,12 @@
 import { create } from "zustand"
-import {Item} from "@/components/ProcessGraphView.tsx";
+import {ProcessInfo} from "@/bindings.ts";
 
 export interface TableStore {
-  table: Item[] | undefined,
-  setTable: (table: Item[]) => void
+  table: ProcessInfo[] | undefined,
+  setTable: (table: ProcessInfo[]) => void
 }
 
 export const useTableStore = create<TableStore>((set) => ({
   table: undefined,
-  setTable: (table: Item[]) => set(() => ({ table }))
+  setTable: (table: ProcessInfo[]) => set(() => ({ table }))
 }))

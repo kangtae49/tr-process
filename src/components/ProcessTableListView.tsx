@@ -3,32 +3,33 @@ import AutoSizer from "react-virtualized-auto-sizer";
 import { useTableStore } from '@/stores/tableStore';
 import {get_mem} from "@/components/utils.ts";
 import {useEffect, useRef} from "react";
-import {useSelectedItemStore} from "@/stores/selectedItemStore.ts";
-import {Item} from "@/components/ProcessGraphView.tsx";
+import {ProcessInfo} from "@/bindings.ts";
+import {useSelectedPidStore} from "@/stores/selectedPidStore.ts";
 
 
 const ITEM_SIZE = 18;
 function ProcessTableListView() {
   const table = useTableStore((state) => state.table);
-  const selectedItem = useSelectedItemStore((state) => state.selectedItem);
-  const setSelectedItem = useSelectedItemStore((state) => state.setSelectedItem);
+  const selectedPid = useSelectedPidStore((state) => state.selectedPid);
+  const setSelectedPid = useSelectedPidStore((state) => state.setSelectedPid);
   const listRef = useRef<List>(null);
 
-  const clickItem = (item: Item | undefined) => {
-    console.log(item);
-    setSelectedItem(item);
+  const clickItem = (pid: number | undefined | null) => {
+    if (pid) {
+      setSelectedPid(pid);
+    }
   }
 
   useEffect(() => {
     console.log('table selected');
-    if (selectedItem == undefined || !listRef.current) return;
-    const idx = table?.findIndex((item) => item.id == selectedItem.id);
+    if (selectedPid == undefined || !listRef.current) return;
+    const idx = table?.findIndex((item) => item.pid == selectedPid);
     console.log('tree selected', idx);
     if (idx == undefined) {
       return
     }
     listRef.current.scrollToItem(idx, "center");
-  }, [selectedItem]);
+  }, [selectedPid]);
 
   if (table === undefined) return null;
 
@@ -45,15 +46,15 @@ function ProcessTableListView() {
             ref={listRef}
           >
             {({ index, style }) => {
-              const item = table[index];
+              const item: ProcessInfo = table[index];
               return item ? (
-                <div className="row" key={index} style={{...style, backgroundColor: `${selectedItem?.id == item.id ? '#bfd2e3': null}`}} >
-                  <div className="col ppid" onClick={() => clickItem(item.parent)}>{item.process?.parent || ''}</div>
-                  <div className="col pid" onClick={() => clickItem(item)}>{item.id}</div>
-                  <div className="col name" title={getTitle(item)} onClick={() => clickItem(item)}>{item.process?.name || ''}</div>
-                  <div className="col addr" onClick={() => clickItem(item)}>{item.socket?.local_addr || ''}</div>
-                  <div className="col port" onClick={() => clickItem(item)}>{item.socket?.local_port || ''}</div>
-                  <div className="col memory" onClick={() => clickItem(item)}>{get_mem(item.process?.memory) || ''}</div>
+                <div className="row" key={index} style={{...style, backgroundColor: `${selectedPid == item.pid ? '#bfd2e3': null}`}} >
+                  <div className="col ppid" onClick={() => clickItem(item.ppid)}>{item.ppid || ''}</div>
+                  <div className="col pid" onClick={() => clickItem(item.pid)}>{item.pid}</div>
+                  <div className="col name" title={getTitle(item)} onClick={() => clickItem(item.pid)}>{item.name || ''}</div>
+                  <div className="col addr" onClick={() => clickItem(item.pid)}>{item.local_addr || ''}</div>
+                  <div className="col port" onClick={() => clickItem(item.pid)}>{item.local_port || ''}</div>
+                  <div className="col memory" onClick={() => clickItem(item.pid)}>{get_mem(item.memory) || ''}</div>
                 </div>
               ) : null
             }}
@@ -66,6 +67,6 @@ function ProcessTableListView() {
 
 export default ProcessTableListView;
 
-function getTitle(item: Item): string {
-  return item.process.exe || item.process.name || item.id;
+function getTitle(item: ProcessInfo): string {
+  return item.exe || item.name || String(item.pid);
 }

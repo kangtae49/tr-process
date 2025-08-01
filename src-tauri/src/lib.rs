@@ -1,3 +1,6 @@
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
 use std::sync::Arc;
 use tauri::{Manager, State, Window};
 use tauri_specta::{collect_commands, Builder};
@@ -5,6 +8,7 @@ use tokio::sync::{oneshot, Mutex, RwLock};
 
 use crate::error::{ApiError, Result};
 use crate::http_server::{ServInfo};
+use crate::sys::{ProcessInfo, ProcessTreeNode};
 
 mod sys;
 mod error;
@@ -28,13 +32,7 @@ fn get_resource_path() -> Result<String> {
 
 #[tauri::command]
 #[specta::specta]
-fn get_sockets() -> Result<Vec<sys::SockInfo>> {
-    sys::get_sockets()
-}
-
-#[tauri::command]
-#[specta::specta]
-fn get_processes() -> Result<Vec<sys::ProcessInfo>> {
+fn get_process() -> Result<Vec<ProcessInfo>> {
     sys::get_processes()
 }
 
@@ -64,8 +62,7 @@ pub async fn run() {
 
     let builder = Builder::<tauri::Wry>::new().commands(collect_commands![
         get_resource_path,
-        get_sockets,
-        get_processes,
+        get_process,
         run_http_server
     ]);
 

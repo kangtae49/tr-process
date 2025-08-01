@@ -1,6 +1,5 @@
-import cytoscape from "cytoscape";
 import natsort from 'natsort';
-import {Item} from "@/components/ProcessGraphView.tsx";
+import {ProcessInfo} from "@/bindings.ts";
 
 export type OrdAsc = "Asc" | "Desc";
 export type OrdBy = "Pid" | "Ppid" | "Name" | "Addr" | "Port" | "Memory";
@@ -9,7 +8,7 @@ export type OrdItm = { nm: OrdBy; asc: OrdAsc };
 
 
 
-export function sort_items(items: Item[], ordItms: OrdItm[]) {
+export function sort_items(items: ProcessInfo[], ordItms: OrdItm[]) {
   const sorters = ordItms.map(ordItm => ({
     key: ordItm.nm,
     sorter: natsort({
@@ -23,23 +22,23 @@ export function sort_items(items: Item[], ordItms: OrdItm[]) {
       let valA = '';
       let valB = '';
       if (key === 'Pid') {
-        valA = a.id?.toString() ?? '';
-        valB = b.id?.toString() ?? '';
+        valA = a.pid?.toString() ?? '';
+        valB = b.pid?.toString() ?? '';
       } else if (key === 'Ppid') {
-        valA = a.process?.parent?.toString() ?? '';
-        valB = b.process?.parent?.toString() ?? '';
+        valA = a.ppid?.toString() ?? '';
+        valB = b.ppid?.toString() ?? '';
       } else if (key === 'Name') {
-        valA = a.process?.name?.toString() ?? '';
-        valB = b.process?.name?.toString() ?? '';
+        valA = a.name?.toString() ?? '';
+        valB = b.name?.toString() ?? '';
       } else if (key === 'Memory') {
-        valA = a.process?.memory?.toString() ?? '';
-        valB = b.process?.memory?.toString() ?? '';
+        valA = a.memory?.toString() ?? '';
+        valB = b.memory?.toString() ?? '';
       } else if (key === 'Addr') {
-        valA = a.socket?.local_addr?.toString() ?? '';
-        valB = b.socket?.local_addr?.toString() ?? '';
+        valA = a.local_addr?.toString() ?? '';
+        valB = b.local_addr?.toString() ?? '';
       } else if (key === 'Port') {
-        valA = a.socket?.local_port?.toString() ?? '';
-        valB = b.socket?.local_port?.toString() ?? '';
+        valA = a.local_port?.toString() ?? '';
+        valB = b.local_port?.toString() ?? '';
       }
       const cmp = sorter(valA, valB);
       if (cmp !== 0) return cmp;
