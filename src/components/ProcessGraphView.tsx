@@ -50,7 +50,7 @@ function ProcessGraphView() {
   const clickZoomIn = () => {
     const cy = cyInstance;
     if (!cy) return;
-    if (selectedPid) {
+    if (selectedPid != undefined) {
       cy.animate({
         zoom: cy.zoom() * 1.3,
         center: { eles: cy.elements(':selected') },
@@ -66,7 +66,7 @@ function ProcessGraphView() {
   const clickZoomOut = () => {
     const cy = cyInstance;
     if (!cy) return;
-    if (selectedPid) {
+    if (selectedPid != undefined) {
       cy.animate({
         zoom: cy.zoom() / 1.3,
         center: { eles: cy.elements(':selected') },
@@ -81,7 +81,7 @@ function ProcessGraphView() {
     const cy = cyInstance;
     if (!cy) return;
 
-    if (selectedPid) {
+    if (selectedPid != undefined) {
       cy.animate({
         fit: {
           // eles: cy.$(':selected'),
@@ -98,7 +98,7 @@ function ProcessGraphView() {
   const clickZoomMax = () => {
     const cy = cyInstance;
     if (!cy) return;
-    if (selectedPid) {
+    if (selectedPid != undefined) {
       cy.animate({
         fit: {
           eles: cy.elements(),
@@ -227,7 +227,7 @@ function ProcessGraphView() {
         <div className="zoom-in">
           <Icon icon={faMagnifyingGlassPlus} onClick={() => clickZoomIn()} />
         </div>
-        {selectedPid && (
+        {(selectedPid != undefined) && (
           <>
             <div className="zoom-max">
               <Icon icon={faMaximize} onClick={() => clickZoomMax()} />

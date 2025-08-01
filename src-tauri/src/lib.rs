@@ -1,6 +1,4 @@
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
+
 use std::sync::Arc;
 use tauri::{Manager, State, Window};
 use tauri_specta::{collect_commands, Builder};
@@ -8,7 +6,7 @@ use tokio::sync::{oneshot, Mutex, RwLock};
 
 use crate::error::{ApiError, Result};
 use crate::http_server::{ServInfo};
-use crate::sys::{ProcessInfo, ProcessTreeNode};
+use crate::sys::{ProcessInfo};
 
 mod sys;
 mod error;

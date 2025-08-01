@@ -15,9 +15,8 @@ function ProcessTableListView() {
   const listRef = useRef<List>(null);
 
   const clickItem = (pid: number | undefined | null) => {
-    if (pid) {
-      setSelectedPid(pid);
-    }
+    if (pid == undefined) return;
+    setSelectedPid(pid);
   }
 
   useEffect(() => {

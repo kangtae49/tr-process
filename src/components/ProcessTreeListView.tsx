@@ -3,16 +3,12 @@ import AutoSizer from "react-virtualized-auto-sizer";
 import {useEffect, useRef, useState} from "react";
 import {get_mem} from "@/components/utils.ts";
 import {CollectionReturnValue, EdgeSingular, NodeCollection, NodeSingular} from "cytoscape";
-import {useTreeStore} from "@/stores/treeStore.ts";
-import {useElementsStore} from "@/stores/elementsStore.ts";
 import {useCyStore} from "@/stores/cyStore.ts";
 import {useSelectedPidStore} from "@/stores/selectedPidStore.ts";
 
 const ITEM_SIZE = 18;
 
 function ProcessTreeListView() {
-  const tree = useTreeStore((state) => state.tree);
-  const elements = useElementsStore((state) => state.elements);
   const cyInstance = useCyStore((state) => state.cyInstance);
   const listRef = useRef<List>(null);
   const setSelectedPid = useSelectedPidStore((state) => state.setSelectedPid);
@@ -33,7 +29,6 @@ function ProcessTreeListView() {
     const rootNodes: NodeCollection = cyInstance.nodes().filter((node) => node.incomers('edge').empty());
 
     const idx = getIndexFromItem(rootNodes, cyInstance.getElementById(`${selectedPid}`));
-    console.log('tree selected', idx, tree);
     if (idx == undefined) {
       return;
     }

@@ -1,6 +1,4 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::{Rc, Weak};
 use netstat2::{get_sockets_info, AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo, SocketInfo, TcpState};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none};
@@ -116,12 +114,7 @@ impl From<&SocketInfo> for SockInfo {
 }
 
 
-pub fn get_sockets() -> Result<Vec<SockInfo>> {
-    let af_flags = AddressFamilyFlags::IPV4 | AddressFamilyFlags::IPV6;
-    let proto_flags = ProtocolFlags::TCP | ProtocolFlags::UDP;
-    let sockets_info = get_sockets_info(af_flags, proto_flags)?;
-    Ok(sockets_info.iter().map(SockInfo::from).collect())
-}
+
 
 #[skip_serializing_none]
 #[serde_as]
@@ -141,21 +134,6 @@ pub struct ProcessInfo {
     remote_addr: Option<String>,
     remote_port: Option<u16>,
     state: Option<SockState>,
-}
-
-
-#[skip_serializing_none]
-#[serde_as]
-#[derive(Type, Serialize, Deserialize, Clone, Debug)]
-pub struct ProcessTreeNode {
-    value: ProcessInfo,
-    children: Vec<Rc<RefCell<ProcessTreeNode>>>,
-
-    #[specta(skip)]
-    #[serde(skip)]
-    parent: Option<Weak<RefCell<ProcessTreeNode>>>,
-
-    depth: Option<usize>
 }
 
 
@@ -276,73 +254,13 @@ pub fn get_processes() -> Result<Vec<ProcessInfo>> {
 }
 
 
-pub fn get_processes_tree() -> Result<(Vec<Rc<RefCell<ProcessTreeNode>>>)> {
-    let process_map = get_processes_map()?;
-
-    let tree: HashMap<u32, Rc<RefCell<ProcessTreeNode>>> = process_map.iter().map(|(k,v)| {
-        let pid = k.clone();
-        (
-            pid,
-            Rc::new(RefCell::new(ProcessTreeNode {
-                children: vec![],
-                parent: None,
-                value: v.clone(),
-                depth: None,
-            }))
-        )
-    }).collect();
-
-    fn get_depth(process_map: &HashMap<u32, ProcessInfo>, pid: u32) -> Option<usize> {
-        let mut depth = 0;
-        let mut cur_pid = pid;
-        while let Some(ppid) = process_map.get(&cur_pid)?.ppid {
-            cur_pid = ppid;
-            depth += 1;
-        }
-        Some(depth)
-    }
-
-
-    for (_k, node) in tree.iter() {
-        let ppid = node.borrow().value.ppid;
-        let pid = node.borrow().value.pid;
-        if let Some(ppid) = ppid {
-            if let Some(parent) = tree.get(&ppid) {
-                parent.borrow_mut().children.push(Rc::clone(&node));
-                node.borrow_mut().parent = Some(Rc::downgrade(parent));
-            }
-        }
-        node.borrow_mut().depth = get_depth(&process_map, pid);
-    }
-
-    let root_tree: Vec<Rc<RefCell<ProcessTreeNode>>> = tree.into_iter().filter(|(_k, node)| {
-            node.borrow().parent.is_none()
-        })
-        .map(|(_k, v)| v)
-        .collect();
-
-    Ok(root_tree)
-}
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    // #[test]
-    // fn test_get_sockets() {
-    //     println!("{:?}", get_sockets());
-    //     assert!(matches!(get_sockets(), Ok(_)));
-    // }
-
-    // #[test]
-    // fn test_get_processes() {
-    //     println!("{:?}", get_processes());
-    //     assert!(matches!(get_processes(), Ok(_)));
-    // }
-
     #[test]
-    fn test_get_processes_map() {
-        // println!("{:?}", get_processes_map());
-        assert!(matches!(get_processes_map(), Ok(_)));
+    fn test_get_processes() {
+        assert!(matches!(get_processes(), Ok(_)));
     }
 }
