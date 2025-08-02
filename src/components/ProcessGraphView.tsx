@@ -138,23 +138,7 @@ function ProcessGraphView() {
     console.log('handleEdgeUnSelect', event)
     setSelectedPid(undefined);
   }, [])
-  useEffect(() => {
-    if (!cyInstance) return;
-    const cy = cyInstance;
-    cy?.autounselectify(false);
 
-    cy.on('select', 'node', handleNodeSelect);
-    cy.on('unselect', 'node', handleNodeUnSelect);
-    cy.on('select', 'edge', handleEdgeSelect);
-    cy.on('unselect', 'edge', handleEdgeUnSelect);
-
-    return () => {
-      cy.off('select', 'node', handleNodeSelect);
-      cy.off('unselect', 'node', handleNodeUnSelect);
-      cy.off('select', 'edge', handleEdgeSelect);
-      cy.off('unselect', 'edge', handleEdgeUnSelect);
-    };
-  }, [cyInstance]);
 
   useEffect(() => {
     if (!cyInstance) return;
@@ -213,7 +197,12 @@ function ProcessGraphView() {
 
     }
     cyRef.current = cy;
+    cy?.autounselectify(false);
     cyRef.current.on('layoutstop', onLayoutStop);
+    cyRef.current.on('select', 'node', handleNodeSelect);
+    cyRef.current.on('unselect', 'node', handleNodeUnSelect);
+    cyRef.current.on('select', 'edge', handleEdgeSelect);
+    cyRef.current.on('unselect', 'edge', handleEdgeUnSelect);
   }
 
   const onLayoutStop = () => {
