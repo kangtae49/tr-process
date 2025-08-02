@@ -1,13 +1,14 @@
 import {useEffect} from "react";
 import {listen} from "@tauri-apps/api/event";
-import {HttpNotify} from "@/bindings";
+import {commands, HttpNotify} from "@/bindings";
 import {useElementsStore} from "@/stores/elementsStore.ts";
-import {makeElements} from "@/components/ProcessGraphView.tsx";
 import {useSelectedPidStore} from "@/stores/selectedPidStore.ts";
+import {useProcessesStore} from "@/stores/processesStore.ts";
 
 function HttpNotifyListener() {
   const setElements = useElementsStore((state) => state.setElements);
   const setSelectedPid = useSelectedPidStore((state) => state.setSelectedPid);
+  const setProcesses = useProcessesStore((state) => state.setProcesses);
 
   useEffect(() => {
     const unlisten = listen<HttpNotify>('http', (event) => {
@@ -15,9 +16,14 @@ function HttpNotifyListener() {
       if (taskNotify.cmd === "Refresh") {
         setSelectedPid(undefined);
         setElements(undefined);
-        makeElements().then((elements) => {
-          setElements(elements);
-        })
+
+        commands.getProcess().then((res) => {
+          if (res.status == 'ok') {
+            const processes = res.data;
+            setProcesses(processes);
+          }
+        });
+
       }
     });
     return () => {

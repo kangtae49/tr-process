@@ -30,8 +30,8 @@ export const coseLayoutOptions: cytoscape.CoseLayoutOptions = {
   // numIter: 1000,
 
   name: 'cose',
-  nodeRepulsion: 1000,           // 노드 간 거리 강하게 설정
-  edgeElasticity: 400,            // 엣지가 당기는 힘
+  nodeRepulsion: 1000,
+  edgeElasticity: 400,
   idealEdgeLength: 400,
   gravity: 80,
   avoidOverlap: true,
@@ -122,3 +122,4 @@ export const graphStylesheet: cytoscape.StylesheetStyle[] = [
   },
 
 ];
+

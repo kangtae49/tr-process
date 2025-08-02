@@ -11,12 +11,15 @@ import {OrdAsc, OrdBy, OrdItm, sort_items} from "@/components/ordering.ts";
 import ProcessTableListView from "@/components/ProcessTableListView.tsx";
 import {useTableStore} from "@/stores/tableStore.ts";
 import {ProcessInfo} from "@/bindings.ts";
+import {useProcessesStore} from "@/stores/processesStore.ts";
 
 function ProcessTableView() {
-  const elements = useElementsStore((state) => state.elements);
-  const tableOrder = useTableOrderStore((state) => state.tableOrder);
+  // const setElements = useElementsStore((state) => state.setElements);
+  const processes = useProcessesStore((state) => state.processes);
+
   const table = useTableStore((state) => state.table);
   const setTable = useTableStore((state) => state.setTable);
+  const tableOrder = useTableOrderStore((state) => state.tableOrder);
   const setTableOrder = useTableOrderStore((state) => state.setTableOrder);
 
   const clickOrder = (nm: OrdBy): void => {
@@ -31,52 +34,39 @@ function ProcessTableView() {
   }
 
   useEffect(() => {
-    if (elements) {
-      const elems: ProcessInfo[] = elements
-        .filter((elem) => elem.data.type === 'node')
-        .map((elem) => elem.data as ProcessInfo)
-      ;
-      setTable(elems);
-      if (tableOrder) {
-        setTableOrder({
-          ...tableOrder,
-        })
-      } else {
-        setTableOrder({
-          nm: 'Name',
-          asc: 'Asc'
-        })
-      }
-
-    }
-  }, [elements]);
-
-  useEffect(() => {
-    if (!table) return;
+    if (processes == undefined) return;
     let ordering: OrdItm[] = [
       tableOrder,
       { nm: "Ppid", asc: 'Asc' },
       { nm: "Pid", asc: 'Asc' },
       { nm: "Name", asc: 'Asc' },
     ]
-    // if (tableOrder.nm == 'Name') {
-    //   ordering = [
-    //     tableOrder,
-    //     { nm: "Ppid", asc: 'Asc' },
-    //     { nm: "Pid", asc: 'Asc' },
-    //   ]
+    const sorted_items = sort_items(processes, ordering);
+    setTable([...sorted_items]);
+    setTable(processes);
+    // if (tableOrder) {
+    //   setTableOrder({
+    //     ...tableOrder,
+    //   })
     // } else {
-    //   ordering = [
-    //     tableOrder,
-    //     { nm: "Name", asc: 'Asc' },
-    //     { nm: "Ppid", asc: 'Asc' },
-    //     { nm: "Pid", asc: 'Asc' },
-    //   ]
+    //   setTableOrder({
+    //     nm: 'Name',
+    //     asc: 'Asc'
+    //   })
     // }
-    const sorted_items = sort_items(table, ordering);
+  }, [processes]);
+
+  useEffect(() => {
+    if (table == undefined || processes == undefined) return;
+    let ordering: OrdItm[] = [
+      tableOrder,
+      { nm: "Ppid", asc: 'Asc' },
+      { nm: "Pid", asc: 'Asc' },
+      { nm: "Name", asc: 'Asc' },
+    ]
+    const sorted_items = sort_items(processes, ordering);
     setTable([...sorted_items]);
   }, [tableOrder]);
-
 
 
   let iconPid = faCircleMinus

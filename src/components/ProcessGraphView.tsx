@@ -22,10 +22,15 @@ import {
   graphStylesheet,
 } from "@/components/graph.ts";
 import { useSelectedPidStore } from '@/stores/selectedPidStore';
+import {useProcessesStore} from "@/stores/processesStore.ts";
+import {useTableStore} from "@/stores/tableStore.ts";
 
 
 
 function ProcessGraphView() {
+  const processes = useProcessesStore((state) => state.processes);
+  const setProcesses = useProcessesStore((state) => state.setProcesses);
+  const table = useTableStore((state) => state.table);
   const elements = useElementsStore((state) => state.elements);
   const setElements = useElementsStore((state) => state.setElements);
   const selectedPid = useSelectedPidStore((state) => state.selectedPid);
@@ -187,7 +192,6 @@ function ProcessGraphView() {
   }, [selectedPid]);
 
   const reCyRef = (cy: cytoscape.Core) => {
-    console.log('reCyRef', cy);
     if (cyRef.current) {
       cyRef.current.off('layoutstop', onLayoutStop);
       cyRef.current.off('select', 'node', handleNodeSelect);
@@ -211,17 +215,75 @@ function ProcessGraphView() {
   };
 
   useEffect(() => {
-    makeElements().then((elements) => {
-      setElements(elements);
-    })
+    commands.getProcess().then((res) => {
+      if (res.status == 'ok') {
+        const processes = res.data;
+        setProcesses(processes);
+      }
+    });
   }, []);
 
 
-  if (!elements) {
+  useEffect(() => {
+
+    // if (processes == undefined) return;
+    if (table == undefined) return;
+
+    const pidNodes: cytoscape.ElementDefinition[] = table.map(( process) => {
+      const color = process.local_addr ? '#f4a261' : '#1f77b4';
+      return {
+        data: {
+          id: `${process.pid}`,
+          type: 'node',
+          label: `${process.pid}`,
+          color: color,
+          info: get_info(process),
+          ...process,
+        },
+      }
+    });
+
+    const pidEdges: cytoscape.ElementDefinition[] = table
+      .filter((process) => (process.ppid !== null && process.ppid !== undefined ))
+      // .filter((process) => processes.some((p)=> p.pid === process.parent))
+      .map((process) => {
+        return {
+          data: {
+            id: `${process.ppid}-${process.pid}`,
+            type: 'edge',
+            source: `${process.ppid}`,
+            target: `${process.pid}`,
+            label: `${process.ppid}-${process.pid}`,
+          },
+          selectable: true
+        }
+      });
+    console.log('setElements');
+    setElements([...pidNodes, ...pidEdges]);
+
+    return () => {
+      // console.log('cleanup');
+      // setElements(undefined)
+      // try {
+      //
+      //   cyRef.current?.stop();
+      //   cyRef.current?.endBatch();
+      //   cyRef.current?.removeAllListeners();
+      //   cyRef.current?.destroy();
+      //   cyRef.current = null;
+      // } catch (e) {
+      //   console.log(e);
+      // }
+    };
+  // }, [processes]);
+  }, [table]);
+
+
+  if (elements == undefined) {
     return <div>Loading...</div>;
   }
-
-  return elements && (
+  console.log('render graph');
+  return (
     <div className="graph-pane">
       <div className="header">
         <div className="refresh">
@@ -289,42 +351,3 @@ function get_info(process: ProcessInfo | undefined) {
 }
 
 
-export async function makeElements() {
-  return commands.getProcess().then((res) => {
-    if (res.status == 'ok') {
-      const processes = res.data;
-
-
-      const pidNodes: cytoscape.ElementDefinition[] = processes.map(( process) => {
-        const color = process.local_addr ? '#f4a261' : '#1f77b4';
-        return {
-          data: {
-            id: `${process.pid}`,
-            type: 'node',
-            label: `${process.pid}`,
-            color: color,
-            info: get_info(process),
-            ...process,
-          },
-        }
-      });
-
-      const pidEdges: cytoscape.ElementDefinition[] = processes
-        .filter((process) => (process.ppid !== null && process.ppid !== undefined ))
-        // .filter((process) => processes.some((p)=> p.pid === process.parent))
-        .map((process) => {
-          return {
-            data: {
-              id: `${process.ppid}-${process.pid}`,
-              type: 'edge',
-              source: `${process.ppid}`,
-              target: `${process.pid}`,
-              label: `${process.ppid}-${process.pid}`,
-            },
-            selectable: true
-          }
-        });
-      return [...pidNodes, ...pidEdges];
-    }
-  });
-}

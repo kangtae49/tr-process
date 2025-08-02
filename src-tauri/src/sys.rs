@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::mem::size_of;
-use std::ptr;
+use std::{thread};
 
 use netstat2::{get_sockets_info, AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo, SocketInfo, TcpState};
 use serde::{Deserialize, Serialize};
@@ -230,6 +230,8 @@ pub fn get_processes_map() -> Result<HashMap<u32, ProcessInfo>> {
 
     let mut system = System::new_all();
     system.refresh_all();
+    // thread::sleep(Duration::from_secs(1));
+    // system.refresh_all();
     let processes = system.processes();
 
     let mut process_map: HashMap<u32, ProcessInfo> = processes.iter().map(|(k,v)| {
@@ -267,7 +269,11 @@ pub fn get_processes_map() -> Result<HashMap<u32, ProcessInfo>> {
 
 pub fn get_processes() -> Result<Vec<ProcessInfo>> {
     let process_map = get_processes_map()?;
-    Ok(process_map.into_iter().map(|(_,v)| v).collect())
+    let process_vec: Vec<ProcessInfo> = process_map.into_iter().map(|(_,v)| v).collect();
+    // let mut process_vec: Vec<ProcessInfo> = process_map.into_iter().map(|(_,v)| v).collect();
+    // process_vec.sort_by(|a, b| a.pid.cmp(&b.pid));
+
+    Ok(process_vec)
 }
 
 
@@ -345,7 +351,6 @@ fn get_process_uptime() -> Result<HashMap<u32, ProcessUptime>> {
             pid,
             uptime,
         });
-        println!("PID {}: 실행 시간 {:?}초", pid, uptime);
 
         unsafe {CloseHandle(handle)}?;
     }

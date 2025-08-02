@@ -2,9 +2,12 @@ import {FixedSizeList as List} from 'react-window';
 import AutoSizer from "react-virtualized-auto-sizer";
 import {useEffect, useRef, useState} from "react";
 import {get_mem, get_sec} from "@/components/utils.ts";
-import {CollectionReturnValue, EdgeSingular, NodeCollection, NodeSingular} from "cytoscape";
+import {EdgeSingular, NodeSingular} from "cytoscape";
 import {useCyStore} from "@/stores/cyStore.ts";
 import {useSelectedPidStore} from "@/stores/selectedPidStore.ts";
+import natsort from "natsort";
+import {OrdItm} from "@/components/ordering.ts";
+import {useTableOrderStore} from "@/stores/tableOrderStore.ts";
 
 const ITEM_SIZE = 18;
 
@@ -13,20 +16,31 @@ function ProcessTreeListView() {
   const listRef = useRef<List>(null);
   const setSelectedPid = useSelectedPidStore((state) => state.setSelectedPid);
   const selectedPid = useSelectedPidStore((state) => state.selectedPid);
-  const [rootNodes, setRootNodes] = useState<NodeCollection | undefined>(undefined);
+  const [rootNodes, setRootNodes] = useState<NodeSingular[] | undefined>(undefined);
   const [selectedItem, setSelectedItem] = useState<NodeSingular | undefined>(undefined);
+  const tableOrder = useTableOrderStore((state) => state.tableOrder);
+  const [treeOrder, setTreeOrder] = useState<OrdItm[] | undefined>([])
+
   const clickItem = (item: NodeSingular | undefined) => {
     console.log(item);
     setSelectedPid(item?.data('pid'));
   }
 
   useEffect(() => {
+    let ordering: OrdItm[] = [
+      tableOrder,
+      { nm: "Ppid", asc: 'Asc' },
+      { nm: "Pid", asc: 'Asc' },
+      { nm: "Name", asc: 'Asc' },
+    ]
+    setTreeOrder(ordering);
+  }, [tableOrder]);
+
+  useEffect(() => {
     console.log('tree selected');
-    if (selectedPid == undefined || !cyInstance || !listRef.current) return;
+    if (selectedPid == undefined || !cyInstance || !listRef.current || !treeOrder) return;
     const processInfo = cyInstance.getElementById(`${selectedPid}`) as NodeSingular;
     setSelectedItem(processInfo);
-
-    const rootNodes: NodeCollection = cyInstance.nodes().filter((node) => node.incomers('edge').empty());
 
     const idx = getIndexFromItem(rootNodes, cyInstance.getElementById(`${selectedPid}`));
     if (idx == undefined) {
@@ -37,7 +51,10 @@ function ProcessTreeListView() {
 
   useEffect(() => {
     if (!cyInstance) return;
-    const rootNodes: NodeCollection = cyInstance.nodes().filter((node) => node.incomers('edge').empty());
+    let rootNodes: NodeSingular[] | undefined = cyInstance.nodes().filter((node) => node.incomers('edge').empty())
+      .map((node) => node as NodeSingular);
+
+    rootNodes = sort_tree(rootNodes);
 
     setRootNodes(rootNodes);
     console.log('rootNodes', rootNodes);
@@ -46,7 +63,7 @@ function ProcessTreeListView() {
 
 
   console.log('render tree');
-  return (cyInstance && rootNodes) && (
+  return (cyInstance && rootNodes && treeOrder ) && (
     <div className="tree">
       <AutoSizer>
         {({ height, width }) => (
@@ -91,20 +108,21 @@ export default ProcessTreeListView;
 
 
 
-function getItemFromIndex(rootNodes: NodeCollection, nth: number): [NodeSingular | undefined, number, number] {
+function getItemFromIndex(rootNodes: NodeSingular [], nth: number): [NodeSingular | undefined, number, number] {
   const [item, index, depth] = getItemFromNth(rootNodes, nth, -1, 0);
   return [item, index, depth];
 }
 
 
-function getIndexFromItem(rootList: NodeCollection | undefined, item: NodeSingular): number | undefined {
+function getIndexFromItem(rootList: NodeSingular [] | undefined, item: NodeSingular): number | undefined {
   const [findIndex] = getNthFromItem(rootList, item, -1, 0);
   return findIndex;
 }
 
 
-function getItemFromNth(rootNodes: NodeCollection | NodeSingular [] | undefined, nth: number, curIdx = -1, curDepth = 0): [treeItem: NodeSingular | undefined, number, number] {
+function getItemFromNth(rootNodes: NodeSingular [] | undefined, nth: number, curIdx = -1, curDepth = 0): [treeItem: NodeSingular | undefined, number, number] {
   let findTreeItem: NodeSingular | undefined = undefined
+
   if (!rootNodes) {
     return [findTreeItem, curIdx, curDepth]
   }
@@ -129,11 +147,12 @@ function getItemFromNth(rootNodes: NodeCollection | NodeSingular [] | undefined,
   return [findTreeItem, curIdx, curDepth]
 }
 
-function getNthFromItem(treeItems: CollectionReturnValue| NodeCollection | NodeSingular[] |undefined, item: NodeSingular, curIdx = -1, curDepth = 0): [number | undefined, number, number] {
+function getNthFromItem(treeItems: NodeSingular[] |undefined, item: NodeSingular, curIdx = -1, curDepth = 0): [number | undefined, number, number] {
   let findIndex: number | undefined = undefined
-  if (!treeItems) {
+  if (treeItems == undefined) {
     return [findIndex, curIdx, curDepth]
   }
+
   for (let idxItem = 0; idxItem < treeItems.length; idxItem++) {
     curIdx++
     if (treeItems[idxItem].data('pid') == item.data('pid')) {
@@ -174,3 +193,55 @@ function getTitle(node: NodeSingular): string {
   return node.data('exe') || node.data('name') || String(node.data('pid'));
 }
 
+function sort_tree(items: NodeSingular[] | undefined) {
+  let ordering: OrdItm[] = [
+    { nm: "Pid", asc: 'Asc' },
+    { nm: "Name", asc: 'Asc' },
+  ]
+  return sort_items(items, ordering);
+}
+
+function sort_items(items: NodeSingular[] | undefined, ordItms: OrdItm[]) {
+  if (items == undefined) {
+    return items;
+  }
+  const sorters = ordItms.map(ordItm => ({
+    key: ordItm.nm,
+    sorter: natsort({
+      insensitive: true,
+      desc: ordItm.asc === 'Desc',
+    }),
+  }));
+
+  return items.sort((a, b) => {
+    for (const { key, sorter }of sorters) {
+      let valA = '';
+      let valB = '';
+      if (key === 'Pid') {
+        valA = a.data('pid')?.toString() ?? '';
+        valB = b.data('pid')?.toString() ?? '';
+      } else if (key === 'Ppid') {
+        valA = a.data('ppid')?.toString() ?? '';
+        valB = b.data('ppid')?.toString() ?? '';
+      } else if (key === 'Name') {
+        valA = a.data('name')?.toString() ?? '';
+        valB = b.data('name')?.toString() ?? '';
+      } else if (key === 'Memory') {
+        valA = a.data('memory')?.toString() ?? '';
+        valB = b.data('memory')?.toString() ?? '';
+      } else if (key === 'Addr') {
+        valA = a.data('local_addr')?.toString() ?? '';
+        valB = b.data('local_addr')?.toString() ?? '';
+      } else if (key === 'Port') {
+        valA = a.data('local_port')?.toString() ?? '';
+        valB = b.data('local_port')?.toString() ?? '';
+      } else if (key === 'Uptime') {
+        valA = a.data('uptime')?.toString() ?? '';
+        valB = b.data('uptime')?.toString() ?? '';
+      }
+      const cmp = sorter(valA, valB);
+      if (cmp !== 0) return cmp;
+    }
+    return 0;
+  });
+}
