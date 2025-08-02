@@ -41,9 +41,9 @@ async runHttpServer(servInfo: ServInfo) : Promise<Result<ServInfo, ApiError>> {
 
 /** user-defined types **/
 
-export type ApiError = { Error: string } | { JsonError: string } | { TokioError: string } | { IoError: string } | { NetstatError: string }
+export type ApiError = { Error: string } | { JsonError: string } | { TokioError: string } | { IoError: string } | { NetstatError: string } | { WindowsError: string }
 export type DiskInfo = { read_bytes: number; write_bytes: number; total_read_bytes: number; total_write_bytes: number }
-export type ProcessInfo = { pid: number; ppid?: number | null; name?: string | null; exe?: string | null; cpu_usage?: number | null; memory?: number | null; disk_usage?: DiskInfo | null; accumulated_cpu_time?: number | null; local_addr?: string | null; local_port?: number | null; protocol?: SockProtocol | null; remote_addr?: string | null; remote_port?: number | null; state?: SockState | null }
+export type ProcessInfo = { pid: number; ppid?: number | null; name?: string | null; exe?: string | null; cpu_usage?: number | null; memory?: number | null; disk_usage?: DiskInfo | null; accumulated_cpu_time?: number | null; local_addr?: string | null; local_port?: number | null; protocol?: SockProtocol | null; remote_addr?: string | null; remote_port?: number | null; state?: SockState | null; uptime?: number | null }
 export type ServInfo = { name: string; ip: string; port: number; path: string }
 export type SockProtocol = "Tcp" | "Udp"
 export type SockState = "Closed" | "Listen" | "SynSent" | "SynReceived" | "Established" | "FinWait1" | "FinWait2" | "CloseWait" | "Closing" | "LastAck" | "TimeWait" | "DeleteTcb" | "Unknown"

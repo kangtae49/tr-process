@@ -21,6 +21,10 @@ pub enum ApiError {
 
     #[error("NetstatError: {0}")]
     NetstatError(String),
+
+    #[error("WindowsError: {0}")]
+    WindowsError(String),
+
 }
 
 impl From<serde_json::error::Error> for ApiError {
@@ -47,3 +51,8 @@ impl From<netstat2::error::Error> for ApiError {
     }
 }
 
+impl From<windows::core::Error> for ApiError {
+    fn from(e: windows::core::Error) -> Self {
+        ApiError::WindowsError(e.to_string())
+    }
+}

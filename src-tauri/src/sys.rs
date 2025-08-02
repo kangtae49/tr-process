@@ -1,9 +1,21 @@
 use std::collections::HashMap;
+use std::time::{SystemTime, UNIX_EPOCH};
+use std::mem::size_of;
+use std::ptr;
+
 use netstat2::{get_sockets_info, AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo, SocketInfo, TcpState};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none};
 use specta::Type;
 use sysinfo::{DiskUsage, Process, System};
+
+use windows::{
+    Win32::System::ProcessStatus::EnumProcesses,
+    Win32::System::Threading::{OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ, GetProcessTimes},
+    Win32::Foundation::{FILETIME, CloseHandle},
+};
+
+
 use crate::error::Result;
 
 
@@ -134,6 +146,7 @@ pub struct ProcessInfo {
     remote_addr: Option<String>,
     remote_port: Option<u16>,
     state: Option<SockState>,
+    uptime: Option<u64>,
 }
 
 
@@ -160,7 +173,7 @@ impl From<&DiskUsage> for DiskInfo {
 
 
 
-fn make_process_info(process: &Process, socket_info: Option<&SockInfo>) -> ProcessInfo {
+fn make_process_info(process: &Process, socket_info: Option<&SockInfo>, uptime: Option<u64>) -> ProcessInfo {
     let pid = process.pid().as_u32();
     let name = Some(process.name().to_string_lossy().to_string());
     let exe = process.exe().map(|p|p.to_string_lossy().to_string());
@@ -202,15 +215,18 @@ fn make_process_info(process: &Process, socket_info: Option<&SockInfo>) -> Proce
         remote_addr,
         remote_port,
         state,
+        uptime
     }
 }
+
+
 
 pub fn get_processes_map() -> Result<HashMap<u32, ProcessInfo>> {
     let af_flags = AddressFamilyFlags::IPV4 | AddressFamilyFlags::IPV6;
     let proto_flags = ProtocolFlags::TCP | ProtocolFlags::UDP;
     let sockets_info = get_sockets_info(af_flags, proto_flags)?;
     let sockets: Vec<SockInfo> = sockets_info.iter().map(SockInfo::from).collect();
-
+    let uptimes = get_process_uptime()?;
 
     let mut system = System::new_all();
     system.refresh_all();
@@ -221,10 +237,11 @@ pub fn get_processes_map() -> Result<HashMap<u32, ProcessInfo>> {
         let find_socket = sockets.iter().find(|s| {
             s.pids.contains(&pid)
         });
+        let find_uptime = uptimes.get(&pid).and_then(|u| u.uptime);
 
         (
             pid,
-            make_process_info(v, find_socket)
+            make_process_info(v, find_socket, find_uptime)
         )
     }).collect();
 
@@ -255,6 +272,86 @@ pub fn get_processes() -> Result<Vec<ProcessInfo>> {
 
 
 
+#[skip_serializing_none]
+#[serde_as]
+#[derive(Type, Serialize, Deserialize, Clone, Debug)]
+pub struct ProcessUptime {
+    pid: u32,
+    uptime: Option<u64>,
+}
+
+fn filetime_to_unix_epoch(ft: FILETIME) -> u64 {
+    let high = (ft.dwHighDateTime as u64) << 32;
+    let low = ft.dwLowDateTime as u64;
+    let total = high | low;
+    total / 10_000_000 - 11644473600
+}
+fn get_process_uptime() -> Result<HashMap<u32, ProcessUptime>> {
+    let mut processes = [0u32; 1024];
+    let mut cb_needed = 0;
+
+    unsafe {EnumProcesses(
+        processes.as_mut_ptr(),
+        (processes.len() * size_of::<u32>()) as u32,
+        &mut cb_needed,
+    )}?;
+
+    let num_processes = cb_needed as usize / size_of::<u32>();
+    println!("num_processes: {}", num_processes);
+    let mut processes_uptime = HashMap::new();
+    for i in 0..num_processes {
+        let pid = processes[i];
+        let mut uptime = None;
+        if pid == 0 {
+            processes_uptime.insert(pid, ProcessUptime {
+                pid,
+                uptime,
+            });
+            continue;
+        }
+        println!("pid: {:?}", pid);
+
+        let handle = match unsafe {OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid)} {
+            Ok(handle) => handle,
+            Err(e) => {
+                println!("{:?}", e);
+                processes_uptime.insert(pid, ProcessUptime {
+                    pid,
+                    uptime,
+                });
+                continue;
+            }
+        };
+        if handle.is_invalid() {
+            println!("handle is_invalid()");
+            processes_uptime.insert(pid, ProcessUptime {
+                pid,
+                uptime,
+            });
+            continue;
+        }
+
+        let mut creation = FILETIME::default();
+        let mut exit = FILETIME::default();
+        let mut kernel = FILETIME::default();
+        let mut user = FILETIME::default();
+
+        if unsafe {GetProcessTimes(handle, &mut creation, &mut exit, &mut kernel, &mut user)}.is_ok() {
+            let start_secs = filetime_to_unix_epoch(creation);
+            let now_secs = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+            uptime = Some(now_secs - start_secs);
+        }
+        processes_uptime.insert(pid, ProcessUptime {
+            pid,
+            uptime,
+        });
+        println!("PID {}: 실행 시간 {:?}초", pid, uptime);
+
+        unsafe {CloseHandle(handle)}?;
+    }
+    Ok(processes_uptime)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -262,5 +359,10 @@ mod tests {
     #[test]
     fn test_get_processes() {
         assert!(matches!(get_processes(), Ok(_)));
+    }
+
+    #[test]
+    fn test_get_process_uptime() {
+        assert!(matches!(get_process_uptime(), Ok(_)));
     }
 }

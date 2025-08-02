@@ -2,7 +2,7 @@ import natsort from 'natsort';
 import {ProcessInfo} from "@/bindings.ts";
 
 export type OrdAsc = "Asc" | "Desc";
-export type OrdBy = "Pid" | "Ppid" | "Name" | "Addr" | "Port" | "Memory";
+export type OrdBy = "Pid" | "Ppid" | "Name" | "Addr" | "Port" | "Memory" | "Uptime";
 export type OrdItm = { nm: OrdBy; asc: OrdAsc };
 
 
@@ -39,6 +39,9 @@ export function sort_items(items: ProcessInfo[], ordItms: OrdItm[]) {
       } else if (key === 'Port') {
         valA = a.local_port?.toString() ?? '';
         valB = b.local_port?.toString() ?? '';
+      } else if (key === 'Uptime') {
+        valA = a.uptime?.toString() ?? '';
+        valB = b.uptime?.toString() ?? '';
       }
       const cmp = sorter(valA, valB);
       if (cmp !== 0) return cmp;

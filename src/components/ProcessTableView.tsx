@@ -85,6 +85,7 @@ function ProcessTableView() {
   let iconAddr = faCircleMinus
   let iconPort = faCircleMinus
   let iconMemory = faCircleMinus
+  let iconUptime = faCircleMinus
 
   if (tableOrder.nm == 'Pid') {
     iconPid = tableOrder.asc == 'Asc' ? faCircleChevronUp : faCircleChevronDown
@@ -98,6 +99,8 @@ function ProcessTableView() {
     iconPort = tableOrder.asc == 'Asc' ? faCircleChevronUp : faCircleChevronDown
   } else if (tableOrder.nm == 'Memory') {
     iconMemory = tableOrder.asc == 'Asc' ? faCircleChevronUp : faCircleChevronDown
+  } else if (tableOrder.nm == 'Uptime') {
+    iconUptime = tableOrder.asc == 'Asc' ? faCircleChevronUp : faCircleChevronDown
   }
 
   return (
@@ -109,6 +112,7 @@ function ProcessTableView() {
         <div className="col addr"><Icon icon={iconAddr} onClick={() => clickOrder('Addr')} />addr</div>
         <div className="col port"><Icon icon={iconPort} onClick={() => clickOrder('Port')} />port</div>
         <div className="col memory"><Icon icon={iconMemory} onClick={() => clickOrder('Memory')} />memory</div>
+        <div className="col uptime"><Icon icon={iconUptime} onClick={() => clickOrder('Uptime')} />uptime</div>
       </div>
       <ProcessTableListView />
     </div>

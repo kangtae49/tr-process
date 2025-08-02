@@ -33,6 +33,7 @@
 .table-pane .header .addr {flex: 0 0 80px;}
 .table-pane .header .port {flex: 0 0 50px;}
 .table-pane .header .memory {flex: 0 0 80px;}
+.table-pane .header .uptime {flex: 0 0 50px;}
 
 .table-pane .table .row .col {padding-left:5px; cursor: pointer;}
 .table-pane .table .row .col:hover {background-color: #bfd2e3;}
@@ -42,3 +43,4 @@
 .table-pane .table .row .addr {flex: 0 0 80px; text-align: right;}
 .table-pane .table .row .port {flex: 0 0 50px; text-align: right;}
 .table-pane .table .row .memory {flex: 0 0 80px; text-align: right; }
+.table-pane .table .row .uptime {flex: 0 0 50px; text-align: right; }

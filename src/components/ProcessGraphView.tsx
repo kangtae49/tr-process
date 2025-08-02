@@ -70,7 +70,7 @@ function ProcessGraphView() {
       cy.animate({
         zoom: cy.zoom() / 1.3,
         center: { eles: cy.elements(':selected') },
-        duration: 500,
+        duration: 300,
         easing: 'ease-in-out'
       });
     } else {
@@ -82,11 +82,16 @@ function ProcessGraphView() {
     if (!cy) return;
 
     if (selectedPid != undefined) {
+      const canvasWidth = cy.width();
+      const canvasHeight = cy.height();
+      const shorterSide = Math.min(canvasWidth, canvasHeight);
+      const dynamicPadding = shorterSide * 0.3;
+
       cy.animate({
         fit: {
           // eles: cy.$(':selected'),
           eles: cy.nodes(':selected'),
-          padding: 230,
+          padding: dynamicPadding,
         },
         duration: 300,
         easing: 'ease-in-out',
@@ -99,12 +104,16 @@ function ProcessGraphView() {
     const cy = cyInstance;
     if (!cy) return;
     if (selectedPid != undefined) {
+      const canvasWidth = cy.width();
+      const canvasHeight = cy.height();
+      const shorterSide = Math.min(canvasWidth, canvasHeight);
+      const dynamicPadding = shorterSide * 0.1;
       cy.animate({
         fit: {
           eles: cy.elements(),
-          padding: 50
+          padding: dynamicPadding
         },
-        duration: 500,
+        duration: 300,
         easing: 'ease-in-out'
       });
     }
@@ -195,6 +204,14 @@ function ProcessGraphView() {
 
   const reCyRef = (cy: cytoscape.Core) => {
     console.log('reCyRef', cy);
+    if (cyRef.current) {
+      cyRef.current.off('layoutstop', onLayoutStop);
+      cyRef.current.off('select', 'node', handleNodeSelect);
+      cyRef.current.off('unselect', 'node', handleNodeUnSelect);
+      cyRef.current.off('select', 'edge', handleEdgeSelect);
+      cyRef.current.off('unselect', 'edge', handleEdgeUnSelect);
+
+    }
     cyRef.current = cy;
     cyRef.current.on('layoutstop', onLayoutStop);
   }

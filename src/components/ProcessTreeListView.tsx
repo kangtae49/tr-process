@@ -1,7 +1,7 @@
 import {FixedSizeList as List} from 'react-window';
 import AutoSizer from "react-virtualized-auto-sizer";
 import {useEffect, useRef, useState} from "react";
-import {get_mem} from "@/components/utils.ts";
+import {get_mem, get_sec} from "@/components/utils.ts";
 import {CollectionReturnValue, EdgeSingular, NodeCollection, NodeSingular} from "cytoscape";
 import {useCyStore} from "@/stores/cyStore.ts";
 import {useSelectedPidStore} from "@/stores/selectedPidStore.ts";
@@ -75,6 +75,7 @@ function ProcessTreeListView() {
                   <div className="col addr" onClick={() => clickItem(item)}>{item.data('local_addr') || ''}</div>
                   <div className="col port" onClick={() => clickItem(item)}>{item.data('local_port') || ''}</div>
                   <div className="col memory" onClick={() => clickItem(item)}>{get_mem(item.data('memory')) || ''}</div>
+                  <div className="col uptime" onClick={() => clickItem(item)}>{get_sec(item.data('uptime')) || ''}</div>
                 </div>
               </div>
               ) : null

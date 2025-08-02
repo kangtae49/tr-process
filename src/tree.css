@@ -21,6 +21,10 @@
     /*flex: 0 0 10px;*/
     width: 40px;
     text-align: right;
+    background-color: #f6d5c8;
+}
+.tree .row-tree .depth:hover {
+    background-color: #bfd2e3;
 }
 .tree .row-tree .icon {
     /*flex: 0 0 10px;*/
@@ -34,23 +38,23 @@
 .tree-pane .tree .row {
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     display: flex;
-    padding: 0 0 2px 0;
+    padding: 0 0 0 0;
     cursor: pointer;
 }
 
 .tree-pane .header {overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
-.tree-pane .header .ppid {width: 40px;}
 .tree-pane .header .pid {width: 40px;}
 .tree-pane .header .name {flex: 1; min-width:50px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
 .tree-pane .header .addr {flex: 0 0 80px;}
 .tree-pane .header .port {flex: 0 0 50px;}
 .tree-pane .header .memory {flex: 0 0 80px;}
+.tree-pane .header .uptime {flex: 0 0 60px;}
 
 .tree-pane .tree .row .col { cursor: pointer; }
 .tree-pane .tree .row .col:hover { background-color: #bfd2e3; }
-.tree-pane .tree .row .ppid {flex: 0 0 40px; text-align: right;}
-.tree-pane .tree .row .pid {flex: 0 0 40px; text-align: right;}
+.tree-pane .tree .row .pid {flex: 0 0 40px; text-align: right; background-color: var(--selected-color);}
 .tree-pane .tree .row .name {flex: 1; padding-left: 5px; text-align: left; }
 .tree-pane .tree .row .addr {flex: 0 0 80px; text-align: right;}
 .tree-pane .tree .row .port {flex: 0 0 50px; text-align: right;}
 .tree-pane .tree .row .memory {flex: 0 0 80px; text-align: right; }
+.tree-pane .tree .row .uptime {flex: 0 0 60px; text-align: right; }

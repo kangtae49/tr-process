@@ -11,7 +11,7 @@ html, body, #root, .container {
 }
 
 :root {
-  --selected-color: #f4a261;
+  --selected-color: #f6b17a;
   --unselected-color: #c5c5cd;
   --file-selected-color: #88a19e;
   --file-hover-color: #2a9d8f;

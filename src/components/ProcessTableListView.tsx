@@ -1,7 +1,7 @@
 import { FixedSizeList as List } from 'react-window';
 import AutoSizer from "react-virtualized-auto-sizer";
 import { useTableStore } from '@/stores/tableStore';
-import {get_mem} from "@/components/utils.ts";
+import {get_mem, get_sec} from "@/components/utils.ts";
 import {useEffect, useRef} from "react";
 import {ProcessInfo} from "@/bindings.ts";
 import {useSelectedPidStore} from "@/stores/selectedPidStore.ts";
@@ -54,6 +54,7 @@ function ProcessTableListView() {
                   <div className="col addr" onClick={() => clickItem(item.pid)}>{item.local_addr || ''}</div>
                   <div className="col port" onClick={() => clickItem(item.pid)}>{item.local_port || ''}</div>
                   <div className="col memory" onClick={() => clickItem(item.pid)}>{get_mem(item.memory) || ''}</div>
+                  <div className="col uptime" onClick={() => clickItem(item.pid)}>{get_sec(item.uptime) || ''}</div>
                 </div>
               ) : null
             }}
