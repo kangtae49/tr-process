@@ -24,11 +24,11 @@ import {
 import { useSelectedPidStore } from '@/stores/selectedPidStore';
 import {useProcessesStore} from "@/stores/processesStore.ts";
 import {useTableStore} from "@/stores/tableStore.ts";
+import {useTableOrderStore} from "@/stores/tableOrderStore.ts";
 
 
 
 function ProcessGraphView() {
-  const processes = useProcessesStore((state) => state.processes);
   const setProcesses = useProcessesStore((state) => state.setProcesses);
   const table = useTableStore((state) => state.table);
   const elements = useElementsStore((state) => state.elements);
@@ -126,22 +126,18 @@ function ProcessGraphView() {
 
 
   const handleNodeSelect = useCallback((event: EventObject) => {
-    console.log('handleNodeSelect')
     const node = event.target;
     setSelectedPid(node.data('pid'));
   }, [])
-  const handleNodeUnSelect = useCallback((event: EventObject) => {
-    console.log('handleNodeUnSelect', event);
+  const handleNodeUnSelect = useCallback((_event: EventObject) => {
     setSelectedPid(undefined);
   }, [])
 
-  const handleEdgeSelect = useCallback((event: EventObject) => {
-    console.log('handleEdgeSelect', event)
-
+  const handleEdgeSelect = useCallback((_event: EventObject) => {
   }, [])
-  const handleEdgeUnSelect = useCallback((event: EventObject) => {
-    console.log('handleEdgeUnSelect', event)
+  const handleEdgeUnSelect = useCallback((_event: EventObject) => {
     setSelectedPid(undefined);
+    setSelectedItem(undefined);
   }, [])
 
 
@@ -160,7 +156,6 @@ function ProcessGraphView() {
     const target = cy.$(`#${selectedPid}`);
     target.select();
     const selectedNode = cy.$(':selected');
-    console.log('animation before', target);
     if (target.length > 0) {
       // cy.nodes().unselect();
 
@@ -258,7 +253,6 @@ function ProcessGraphView() {
           selectable: true
         }
       });
-    console.log('setElements');
     setElements([...pidNodes, ...pidEdges]);
 
     return () => {
@@ -282,7 +276,6 @@ function ProcessGraphView() {
   if (elements == undefined) {
     return <div>Loading...</div>;
   }
-  console.log('render graph');
   return (
     <div className="graph-pane">
       <div className="header">

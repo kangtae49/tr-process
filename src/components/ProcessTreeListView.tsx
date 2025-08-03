@@ -22,7 +22,6 @@ function ProcessTreeListView() {
   const [treeOrder, setTreeOrder] = useState<OrdItm[] | undefined>([])
 
   const clickItem = (item: NodeSingular | undefined) => {
-    console.log(item);
     setSelectedPid(item?.data('pid'));
   }
 
@@ -37,8 +36,7 @@ function ProcessTreeListView() {
   }, [tableOrder]);
 
   useEffect(() => {
-    console.log('tree selected');
-    if (selectedPid == undefined || !cyInstance || !listRef.current || !treeOrder) return;
+    if (!cyInstance || !listRef.current || !treeOrder) return;
     const processInfo = cyInstance.getElementById(`${selectedPid}`) as NodeSingular;
     setSelectedItem(processInfo);
 
@@ -57,12 +55,9 @@ function ProcessTreeListView() {
     rootNodes = sort_tree(rootNodes);
 
     setRootNodes(rootNodes);
-    console.log('rootNodes', rootNodes);
 
   }, [cyInstance]);
 
-
-  console.log('render tree');
   return (cyInstance && rootNodes && treeOrder ) && (
     <div className="tree">
       <AutoSizer>

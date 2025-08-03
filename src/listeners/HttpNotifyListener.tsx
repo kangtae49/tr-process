@@ -14,7 +14,7 @@ function HttpNotifyListener() {
     const unlisten = listen<HttpNotify>('http', (event) => {
       let taskNotify = event.payload;
       if (taskNotify.cmd === "Refresh") {
-        setSelectedPid(undefined);
+        // setSelectedPid(undefined);
         setElements(undefined);
 
         commands.getProcess().then((res) => {

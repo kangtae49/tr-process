@@ -20,10 +20,8 @@ function ProcessTableListView() {
   }
 
   useEffect(() => {
-    console.log('table selected');
     if (selectedPid == undefined || !listRef.current) return;
     const idx = table?.findIndex((item) => item.pid == selectedPid);
-    console.log('tree selected', idx);
     if (idx == undefined) {
       return
     }

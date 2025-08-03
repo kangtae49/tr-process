@@ -1,5 +1,4 @@
 import {useEffect} from "react";
-import {useElementsStore} from "@/stores/elementsStore.ts";
 import { FontAwesomeIcon as Icon } from '@fortawesome/react-fontawesome'
 import {
   faCircleChevronDown,
@@ -10,14 +9,12 @@ import { useTableOrderStore } from '@/stores/tableOrderStore';
 import {OrdAsc, OrdBy, OrdItm, sort_items} from "@/components/ordering.ts";
 import ProcessTableListView from "@/components/ProcessTableListView.tsx";
 import {useTableStore} from "@/stores/tableStore.ts";
-import {ProcessInfo} from "@/bindings.ts";
+import {HttpNotify} from "@/bindings.ts";
 import {useProcessesStore} from "@/stores/processesStore.ts";
+import {emit} from "@tauri-apps/api/event";
 
 function ProcessTableView() {
-  // const setElements = useElementsStore((state) => state.setElements);
   const processes = useProcessesStore((state) => state.processes);
-
-  const table = useTableStore((state) => state.table);
   const setTable = useTableStore((state) => state.setTable);
   const tableOrder = useTableOrderStore((state) => state.tableOrder);
   const setTableOrder = useTableOrderStore((state) => state.setTableOrder);
@@ -44,28 +41,13 @@ function ProcessTableView() {
     const sorted_items = sort_items(processes, ordering);
     setTable([...sorted_items]);
     setTable(processes);
-    // if (tableOrder) {
-    //   setTableOrder({
-    //     ...tableOrder,
-    //   })
-    // } else {
-    //   setTableOrder({
-    //     nm: 'Name',
-    //     asc: 'Asc'
-    //   })
-    // }
   }, [processes]);
 
   useEffect(() => {
-    if (table == undefined || processes == undefined) return;
-    let ordering: OrdItm[] = [
-      tableOrder,
-      { nm: "Ppid", asc: 'Asc' },
-      { nm: "Pid", asc: 'Asc' },
-      { nm: "Name", asc: 'Asc' },
-    ]
-    const sorted_items = sort_items(processes, ordering);
-    setTable([...sorted_items]);
+    const httpNotify: HttpNotify = {
+      cmd: 'Refresh'
+    }
+    emit('http', httpNotify).then();
   }, [tableOrder]);
 
 
