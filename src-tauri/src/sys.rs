@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::mem::size_of;
-use std::{thread};
+// use std::{thread};
 
 use netstat2::{get_sockets_info, AddressFamilyFlags, ProtocolFlags, ProtocolSocketInfo, SocketInfo, TcpState};
 use serde::{Deserialize, Serialize};
@@ -140,12 +140,14 @@ pub struct ProcessInfo {
     memory: Option<u64>,
     disk_usage: Option<DiskInfo>,
     accumulated_cpu_time: Option<u64>,
-    local_addr: Option<String>,
-    local_port: Option<u16>,
-    protocol: Option<SockProtocol>,
-    remote_addr: Option<String>,
-    remote_port: Option<u16>,
-    state: Option<SockState>,
+    socks: Vec<SockInfo>,
+    // local_addr: Option<String>,
+    // local_port: Option<u16>,
+    // protocol: Option<SockProtocol>,
+    // remote_addr: Option<String>,
+    // remote_port: Option<u16>,
+    // state: Option<SockState>,
+
     uptime: Option<u64>,
 }
 
@@ -173,7 +175,7 @@ impl From<&DiskUsage> for DiskInfo {
 
 
 
-fn make_process_info(process: &Process, socket_info: Option<&SockInfo>, uptime: Option<u64>) -> ProcessInfo {
+fn make_process_info(process: &Process, sockets: &Vec<SockInfo>, uptime: Option<u64>) -> ProcessInfo {
     let pid = process.pid().as_u32();
     let name = Some(process.name().to_string_lossy().to_string());
     let exe = process.exe().map(|p|p.to_string_lossy().to_string());
@@ -182,22 +184,23 @@ fn make_process_info(process: &Process, socket_info: Option<&SockInfo>, uptime: 
     let disk_usage = Some(DiskInfo::from(&process.disk_usage()));
     let accumulated_cpu_time = Some(process.accumulated_cpu_time());
     let ppid = process.parent().map(|p| p.as_u32());
-    let (
-        local_addr, local_port, protocol, remote_addr, remote_port, state
-    ) = match socket_info {
-        Some(socket_info) => {
-            (
-                Some(socket_info.local_addr.clone()),
-                Some(socket_info.local_port),
-                Some(socket_info.protocol.clone()),
-                socket_info.remote_addr.clone(),
-                socket_info.remote_port.clone(),
-                socket_info.state.clone(),
-            )
-        }
-        None => (None, None, None, None, None, None)
-
-    };
+    let socks = sockets.iter().filter(|s| s.pids.contains(&pid)).cloned().collect();
+    // let (
+    //     local_addr, local_port, protocol, remote_addr, remote_port, state
+    // ) = match socket_info {
+    //     Some(socket_info) => {
+    //         (
+    //             Some(socket_info.local_addr.clone()),
+    //             Some(socket_info.local_port),
+    //             Some(socket_info.protocol.clone()),
+    //             socket_info.remote_addr.clone(),
+    //             socket_info.remote_port.clone(),
+    //             socket_info.state.clone(),
+    //         )
+    //     }
+    //     None => (None, None, None, None, None, None)
+    //
+    // };
 
     ProcessInfo {
         pid,
@@ -208,13 +211,13 @@ fn make_process_info(process: &Process, socket_info: Option<&SockInfo>, uptime: 
         memory,
         disk_usage,
         accumulated_cpu_time,
-
-        local_addr,
-        local_port,
-        protocol,
-        remote_addr,
-        remote_port,
-        state,
+        socks,
+        // local_addr,
+        // local_port,
+        // protocol,
+        // remote_addr,
+        // remote_port,
+        // state,
         uptime
     }
 }
@@ -236,14 +239,13 @@ pub fn get_processes_map() -> Result<HashMap<u32, ProcessInfo>> {
 
     let mut process_map: HashMap<u32, ProcessInfo> = processes.iter().map(|(k,v)| {
         let pid = k.as_u32();
-        let find_socket = sockets.iter().find(|s| {
+        let sockets = sockets.iter().filter(|s| {
             s.pids.contains(&pid)
-        });
+        }).map(|s| s.clone()).collect();
         let find_uptime = uptimes.get(&pid).and_then(|u| u.uptime);
-
         (
             pid,
-            make_process_info(v, find_socket, find_uptime)
+            make_process_info(v, &sockets, find_uptime)
         )
     }).collect();
 

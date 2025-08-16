@@ -225,7 +225,7 @@ function ProcessGraphView() {
     if (table == undefined) return;
 
     const pidNodes: cytoscape.ElementDefinition[] = table.map(( process) => {
-      const color = process.local_addr ? '#f4a261' : '#1f77b4';
+      const color = process.socks.length > 0 ? '#f4a261' : '#1f77b4';
       return {
         data: {
           id: `${process.pid}`,
@@ -330,17 +330,43 @@ function ProcessGraphView() {
 export default ProcessGraphView;
 
 function get_info(process: ProcessInfo | undefined) {
+  const local_addr = process?.socks.map((sock) =>sock.local_addr).join(', ');
+  const local_port = process?.socks.map((sock) =>sock.local_port).join(', ');
+  const remote_addr = process?.socks.map((sock) =>sock.remote_addr).join(', ');
+  const remote_port = process?.socks.map((sock) =>sock.remote_port).join(', ');
+  let local = undefined;
+  if (local_addr && local_port) {
+    local = `${local_addr}:${local_port}`;
+  }
+  let remote = undefined;
+  if (remote_addr && remote_port) {
+    remote = `${remote_addr}:${remote_port}`;
+  }
   const ret = [
     `${process?.name}`,
     `pid: ${process?.pid}`,
     `ppid: ${process?.ppid}`,
     `mem: ${get_mem(process?.memory)}`,
-    `local: ${process?.local_addr}:${process?.local_port}`,
-    `remote: ${process?.remote_addr}:${process?.remote_port}`,
+    `local: ${local}`,
+    `remote: ${remote}`,
     // `total_read_bytes: ${process.disk_usage.total_read_bytes}`,
     // `total_write_bytes: ${process.disk_usage.total_write_bytes}`,
   ].filter((x) => !x.endsWith('undefined'));
   return ret.join('\n')
 }
 
+export function get_local_addr(process: ProcessInfo | undefined) {
+  return process?.socks.map((sock) =>sock.local_addr).join(', ');
+}
 
+export function get_local_port(process: ProcessInfo | undefined) {
+  return process?.socks.map((sock) =>sock.local_port).join(', ');
+}
+
+export function get_remote_addr(process: ProcessInfo | undefined) {
+  return process?.socks.map((sock) =>sock.remote_addr).join(', ');
+}
+
+export function get_remote_port(process: ProcessInfo | undefined) {
+  return process?.socks.map((sock) =>sock.remote_port).join(', ');
+}

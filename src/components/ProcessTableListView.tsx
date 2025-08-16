@@ -5,6 +5,7 @@ import {get_mem, get_sec} from "@/components/utils.ts";
 import {useEffect, useRef} from "react";
 import {ProcessInfo} from "@/bindings.ts";
 import {useSelectedPidStore} from "@/stores/selectedPidStore.ts";
+import {get_local_addr, get_local_port} from "@/components/ProcessGraphView.tsx";
 
 
 const ITEM_SIZE = 18;
@@ -49,8 +50,8 @@ function ProcessTableListView() {
                   <div className="col ppid" onClick={() => clickItem(item.ppid)}>{item.ppid || ''}</div>
                   <div className="col pid" onClick={() => clickItem(item.pid)}>{item.pid}</div>
                   <div className="col name" title={getTitle(item)} onClick={() => clickItem(item.pid)}>{item.name || ''}</div>
-                  <div className="col addr" onClick={() => clickItem(item.pid)}>{item.local_addr || ''}</div>
-                  <div className="col port" onClick={() => clickItem(item.pid)}>{item.local_port || ''}</div>
+                  <div className="col addr" onClick={() => clickItem(item.pid)}>{get_local_addr(item) || ''}</div>
+                  <div className="col port" onClick={() => clickItem(item.pid)}>{get_local_port(item) || ''}</div>
                   <div className="col memory" onClick={() => clickItem(item.pid)}>{get_mem(item.memory) || ''}</div>
                   <div className="col uptime" onClick={() => clickItem(item.pid)}>{get_sec(item.uptime) || ''}</div>
                 </div>
